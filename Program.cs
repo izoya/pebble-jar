@@ -1,1 +1,31 @@
-﻿Console.WriteLine("Hello, World!");
+﻿using ACount.Models;
+
+namespace ACount;
+
+internal class Program
+{
+    static void Main()
+    {
+        var account = new Account
+        {
+            Name = "Savings",
+            AccountNumber = "12345",
+            Currency = Currency.NZD,
+        };
+
+        var transactions = new List<Transaction> {
+            new Transaction { AccountId = account.Id, Amount = -100m },
+            new Transaction { AccountId = account.Id, Amount = -50.25m, Description = "Groceries" },
+            new Transaction { AccountId = account.Id, Amount = 20m, Description = "Refund" },
+        };
+
+        Console.WriteLine($"{account}\n");
+        foreach (var transaction in transactions)
+        {
+            Console.WriteLine($"{transaction}");
+        }
+
+
+
+    }
+}
