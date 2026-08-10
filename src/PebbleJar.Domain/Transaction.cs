@@ -1,5 +1,5 @@
+﻿namespace PebbleJar.Domain;
 
-namespace ACount.Models;
 
 public enum TransactionType
 {

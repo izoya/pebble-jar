@@ -1,4 +1,4 @@
-namespace ACount.Models;
+namespace PebbleJar.Domain;
 
 public enum Currency
 {

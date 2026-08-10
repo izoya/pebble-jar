@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/PebbleJar.Api/PebbleJar.Api.csproj" />
+    <Project Path="src/PebbleJar.Domain/PebbleJar.Domain.csproj" />
+    <Project Path="src/PebbleJar.Extensions/PebbleJar.Extensions.csproj" />
+  </Folder>
+</Solution>
