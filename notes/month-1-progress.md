@@ -6,6 +6,19 @@
 
 
 ## Week2
+Project references:
+```mermaid
+flowchart TD
+    Api[PebbleJar.Api] --> Application[PebbleJar.Application]
+    Api --> Infrastructure[PebbleJar.Infrastructure]
+
+    Application --> Domain[PebbleJar.Domain]
+
+    Infrastructure --> Application
+    Infrastructure --> Domain
+```
+```
+
 
 ## Week3
 

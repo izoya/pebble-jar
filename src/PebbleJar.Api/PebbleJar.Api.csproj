@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -12,8 +12,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PebbleJar.Domain\PebbleJar.Domain.csproj" />
-    <ProjectReference Include="..\PebbleJar.Extensions\PebbleJar.Extensions.csproj" />
+    <ProjectReference Include="..\PebbleJar.Application\PebbleJar.Application.csproj" />
+    <ProjectReference Include="..\PebbleJar.Infrastructure\PebbleJar.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

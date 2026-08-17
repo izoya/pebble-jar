@@ -1,6 +1,15 @@
 @PebbleJar.Api_HostAddress = http://localhost:5142
 
-GET {{PebbleJar.Api_HostAddress}}/weatherforecast/
+### Health check
+GET {{PebbleJar.Api_HostAddress}}/health/
 Accept: application/json
 
-###
+### Accounts
+GET {{PebbleJar.Api_HostAddress}}/accounts/
+Accept: application/json
+
+### Transactions
+GET {{PebbleJar.Api_HostAddress}}/transactions/
+Accept: application/json
+
+
