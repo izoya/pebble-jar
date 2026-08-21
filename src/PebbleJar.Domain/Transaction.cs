@@ -1,4 +1,6 @@
-﻿namespace PebbleJar.Domain;
+﻿using System.Text.Json.Serialization;
+
+namespace PebbleJar.Domain;
 
 
 public enum TransactionType
@@ -38,6 +40,9 @@ public class Transaction
             throw new ArgumentException("Transaction description could not be empty string")
             : value;
     }
+
+    [JsonIgnore]
+    public virtual Account Account { get; set; }
 
     public override string ToString()
     {

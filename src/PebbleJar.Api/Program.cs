@@ -1,9 +1,12 @@
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Http.Timeouts;
+using PebbleJar.Api.Contracts.Requests;
 using PebbleJar.Application.Interfaces;
 using PebbleJar.Domain;
 using PebbleJar.Infrastructure;
 using PebbleJar.Infrastructure.Repositories;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 # region Add services to the container 
@@ -22,10 +25,25 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 {
     options.SerializerOptions.PropertyNamingPolicy =
         JsonNamingPolicy.SnakeCaseLower;
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
 });
+builder.Services.AddRequestTimeouts(options =>
+{
+    options.DefaultPolicy = new RequestTimeoutPolicy
+    {
+        Timeout = TimeSpan.FromSeconds(10)
+    };
+});
+
+
+// TODO: Remove this if decide to use minimal APIs instead
+builder.Services.AddControllers();
+builder.Services.AddValidation();
 # endregion
 
 var app = builder.Build();
+app.MapControllers();
+app.UseRequestTimeouts();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -39,7 +57,9 @@ app.MapGet("/health", () => DateTime.UtcNow).WithName("Health");
 
 app.MapGet("/accounts", GetAccounts).WithName("GetAllAccounts");
 app.MapGet("/accounts/{id:guid}", GetAccountById).WithName("GetAccountById");
-app.MapPost("/accounts", AddAccount).WithName("AddAccount");
+app.MapPost("/accounts", AddAccount).WithName("AddAccount")
+    // Example of an endpoint-specific timeout
+    .WithRequestTimeout(TimeSpan.FromSeconds(30));
 
 app.MapGet("/transactions", GetTransactions).WithName("GetAllTransactions");
 app.MapGet("/transactions/{id:guid}", GetTransactionById).WithName("GetTransactionById");
@@ -49,13 +69,13 @@ app.MapPost("/seed", SeedData).WithName("SeedData");
 
 
 # region Account Endpoints
-static async Task<IReadOnlyList<Account>> GetAccounts(IAccountRepository repository)
+static async Task<IReadOnlyList<Account>> GetAccounts(IAccountRepository repository, CancellationToken token)
 {
-    return await repository.ListAsync();
+    return await repository.ListAsync(token);
 }
-static async Task<Account?> GetAccountById(IAccountRepository repository, Guid id)
+static async Task<Account?> GetAccountById(IAccountRepository repository, Guid id, CancellationToken token)
 {
-    return await repository.GetByIdAsync(id);
+    return await repository.GetByIdAsync(id, token);
 }
 static async Task AddAccount(IAccountRepository repository, Account account)
 {
@@ -68,17 +88,37 @@ static async Task<IReadOnlyList<Transaction>> GetTransactions(ITransactionReposi
 {
     return await repository.ListAsync();
 }
-static async Task<Results<Ok<Transaction>, NotFound>> GetTransactionById(ITransactionRepository repository, Guid id)
+static async Task<Results<Ok<Transaction>, NotFound>> GetTransactionById(
+    ITransactionRepository repository,
+    Guid id)
 {
     var transaction = await repository.GetByIdAsync(id);
 
-    if (transaction is null) return TypedResults.NotFound();
-
-    return TypedResults.Ok(transaction);
+    return transaction is null
+        ? TypedResults.NotFound()
+        : TypedResults.Ok(transaction);
 }
-static async Task AddTransaction(ITransactionRepository repository, Transaction transaction)
+
+static async Task<Results<Ok, BadRequest<string>>> AddTransaction(ITransactionRepository repository, CreateTransactionRequest request)
 {
+    if (request.AccountId is not Guid accountId ||
+        request.Amount is not decimal amount ||
+        request.Category is not TransactionCategory category)
+    {
+        return TypedResults.BadRequest("Required fields are missing.");
+    }
+
+    var transaction = new Transaction
+    {
+        AccountId = accountId,
+        Amount = amount,
+        Category = category,
+        Description = request.Description,
+    };
+
     await repository.AddAsync(transaction);
+
+    return TypedResults.Ok();
 }
 # endregion
 

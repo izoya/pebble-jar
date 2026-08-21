@@ -17,8 +17,14 @@ flowchart TD
     Infrastructure --> Application
     Infrastructure --> Domain
 ```
-```
 
+### Scalability evaluation
+ - 10 accounts
+ - 200 transactions / month
+ - 10 years
+ => 240_000 transaction * 2 KB = 480_000 KB = 480MB
+
+ SQLite would fit.
 
 ## Week3
 
