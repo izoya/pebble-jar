@@ -15,6 +15,7 @@ flowchart TD
     Application --> Domain[PebbleJar.Domain]
 
     Infrastructure --> Application
+    Infrastructure --> Extensions
     Infrastructure --> Domain
 ```
 

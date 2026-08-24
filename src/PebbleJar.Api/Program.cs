@@ -1,9 +1,13 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Http.Timeouts;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using PebbleJar.Api.Contracts.Requests;
 using PebbleJar.Application.Interfaces;
 using PebbleJar.Domain;
 using PebbleJar.Infrastructure;
+using PebbleJar.Infrastructure.Akahu;
+using PebbleJar.Infrastructure.Data;
 using PebbleJar.Infrastructure.Repositories;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -11,9 +15,7 @@ using System.Text.Json.Serialization;
 var builder = WebApplication.CreateBuilder(args);
 # region Add services to the container 
 
-// InMemory repositories registered as singletons ensure the inner storage persists across requests.
-builder.Services.AddSingleton<ITransactionRepository, InMemoryTransactionRepository>();
-builder.Services.AddSingleton<IAccountRepository, InMemoryAccountRepository>();
+
 //builder.Services.AddMemoryCache();
 
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
@@ -34,15 +36,20 @@ builder.Services.AddRequestTimeouts(options =>
         Timeout = TimeSpan.FromSeconds(10)
     };
 });
+builder.Services.AddDbContext<PebbleJarDbContext>(options =>
+    options.UseSqlite(
+        builder.Configuration.GetConnectionString("PebbleJar")
+));
 
-
-// TODO: Remove this if decide to use minimal APIs instead
-builder.Services.AddControllers();
+builder.Services.AddScoped<IAccountRepository, SqliteAccountRepository>();
+builder.Services.AddScoped<ITransactionRepository, SqliteTransactionRepository>();
 builder.Services.AddValidation();
+
+builder.Services.AddAkahu(builder.Configuration);
+
 # endregion
 
 var app = builder.Build();
-app.MapControllers();
 app.UseRequestTimeouts();
 
 // Configure the HTTP request pipeline.
@@ -66,6 +73,22 @@ app.MapGet("/transactions/{id:guid}", GetTransactionById).WithName("GetTransacti
 app.MapPost("/transactions", AddTransaction).WithName("AddTransaction");
 
 app.MapPost("/seed", SeedData).WithName("SeedData");
+if (app.Environment.IsDevelopment())
+{
+    app.MapGet("/test-akahu", async (
+        AkahuClient client,
+        IOptions<AkahuOptions> options,
+        ILogger<AkahuClient> logger,
+        CancellationToken token) =>
+    {
+        return Results.Ok(new
+        {
+            ClientDump = client.ToString(),
+            Options = options.Value,
+            Response = await client.GetMeAsync(token)
+        });
+    });
+}
 
 
 # region Account Endpoints

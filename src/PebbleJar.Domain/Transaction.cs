@@ -1,6 +1,4 @@
-﻿using System.Text.Json.Serialization;
-
-namespace PebbleJar.Domain;
+﻿namespace PebbleJar.Domain;
 
 
 public enum TransactionType
@@ -41,8 +39,8 @@ public class Transaction
             : value;
     }
 
-    [JsonIgnore]
-    public virtual Account Account { get; set; }
+    //[JsonIgnore]
+    //public virtual Account Account { get; set; }
 
     public override string ToString()
     {

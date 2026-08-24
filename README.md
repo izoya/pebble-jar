@@ -22,4 +22,25 @@ Personal finances are spread across multiple bank accounts, shares accounts etc.
 - Categorise spending
 - Mobile and web frontend
 
+
+## Configuration
+The required application options are listed in the `example.env`.
+
+Configuration priority:
+```
+environment variables
+	↓
+User Secrets
+	↓
+appsettings.Development.json
+	↓
+appsettings.json
+```
+
+To initialise secrets use:
+```sh
+dotnet user-secrets -p src/PebbleJar.Api set "Akahu:AppIdToken" "..."
+```
+
+
 ## Security notes

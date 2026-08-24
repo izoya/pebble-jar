@@ -1,9 +1,15 @@
 <Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="example.env" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src/PebbleJar.Api/PebbleJar.Api.csproj" />
     <Project Path="src/PebbleJar.Application/PebbleJar.Application.csproj" />
     <Project Path="src/PebbleJar.Domain/PebbleJar.Domain.csproj" />
     <Project Path="src/PebbleJar.Extensions/PebbleJar.Extensions.csproj" />
     <Project Path="src/PebbleJar.Infrastructure/PebbleJar.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/PebbleJar.Extensions.Tests/PebbleJar.Extensions.Tests.csproj" />
   </Folder>
 </Solution>
