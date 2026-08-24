@@ -6,43 +6,50 @@ using System.Net.Http.Json;
 
 namespace PebbleJar.Infrastructure.Akahu
 {
-    public sealed class AkahuClient
+    public sealed class AkahuClient(
+        HttpClient httpClient,
+        IOptions<AkahuOptions> options,
+        ILogger<AkahuClient> logger)
     {
-        private readonly HttpClient _httpClient;
-        private readonly AkahuOptions _options;
-        private readonly ILogger<AkahuClient> logger;
+        private readonly AkahuOptions options = options.Value;
 
-        public AkahuClient(
-            HttpClient httpClient,
-            IOptions<AkahuOptions> options,
-            ILogger<AkahuClient> logger
-            )
-        {
-            _httpClient = httpClient;
-            _options = options.Value;
-            this.logger = logger;
-        }
-
-
-        public async Task<AkahuResponse<AkahuUser>> GetMeAsync(
+        public async Task<AkahuSingleResponse<AkahuUser>> GetMeAsync(
             CancellationToken token)
         {
+            string endpoint = "me";
             using var request = PrepareRequestFor("me");
-            using var response = await _httpClient.SendAsync(request, token);
+            using var response = await httpClient.SendAsync(request, token);
 
             response.EnsureSuccessStatusCode();
 
-            return await IntoAkahuResponse<AkahuUser>(response, token);
+            return await IntoAkahuResponse<AkahuSingleResponse<AkahuUser>>(
+                endpoint, response, token);
         }
 
-        private async Task<AkahuResponse<T>> IntoAkahuResponse<T>(HttpResponseMessage response, CancellationToken token)
-            where T : AkahuDto
+        public async Task<AkahuListResponse<AkahuAccount>> ListAccountsAsync(CancellationToken token)
+        {
+            string endpoint = "accounts";
+            using var request = PrepareRequestFor(endpoint);
+            using var response = await httpClient.SendAsync(request, token);
+
+            response.EnsureSuccessStatusCode();
+
+            return await IntoAkahuResponse<AkahuListResponse<AkahuAccount>>(
+                endpoint, response, token);
+        }
+
+
+        private async Task<TResponse> IntoAkahuResponse<TResponse>(
+            string endpoint,
+            HttpResponseMessage response,
+            CancellationToken token)
+        where TResponse : AkahuResponseBase
         {
             var obj = await response.Content
-                .ReadFromJsonAsync<AkahuResponse<T>>(token)
+                .ReadFromJsonAsync<TResponse>(token)
                 ?? throw new InvalidOperationException("Akahu returned an empty response.");
 
-            LogUnknownFields(obj);
+            LogUnknownFields<TResponse>(obj, endpoint);
 
             return obj;
         }
@@ -55,23 +62,28 @@ namespace PebbleJar.Infrastructure.Akahu
 
             request.Headers.Authorization = new AuthenticationHeaderValue(
                 "Bearer",
-                _options.UserAccessToken.Reveal());
+                options.UserAccessToken.Reveal());
 
             request.Headers.Add(
                 "X-Akahu-Id",
-                _options.AppIdToken.Reveal());
+                options.AppIdToken.Reveal());
 
             return request;
 
         }
 
-        private void LogUnknownFields<T>(AkahuResponse<T> obj)
-            where T : AkahuDto
+        private void LogUnknownFields<TResponse>(
+            TResponse obj,
+            string endpoint
+        ) where TResponse : AkahuResponseBase
         {
-            var fieldsCollection = new Dictionary<string, string[]>() {
-
-                { "outer", obj.UnknownFields.Keys.ToArray() },
-                { "inner", obj.Item.UnknownFields.Keys.ToArray() },
+            var fieldsCollection = new Dictionary<string, string[]>()
+            {
+                ["outer"] = [.. obj.UnknownFields.Keys],
+                ["inner"] = [.. obj.ListItems()
+                .SelectMany(item => item.UnknownFields.Keys)
+                // Ordinal (explicitly stated default) performs a case-sensitive comparison
+                .Distinct(StringComparer.Ordinal)],
             };
 
             foreach ((var key, var fields) in fieldsCollection)
@@ -79,8 +91,10 @@ namespace PebbleJar.Infrastructure.Akahu
                 if (fields.Length > 0)
                 {
                     logger.LogWarning(
-                        "Akahu returned unmapped fields in {ResponseLevel} Response: {FieldNames}",
+                        "Akahu returned unmapped fields in {ResponseLevel} Response " +
+                        "for /{Endpoint}: {FieldNames}",
                         key,
+                        endpoint,
                         fields
                     );
                 }
@@ -88,5 +102,4 @@ namespace PebbleJar.Infrastructure.Akahu
         }
     }
 }
-
 

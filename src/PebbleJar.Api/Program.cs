@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http.Timeouts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using PebbleJar.Api.Contracts.Requests;
+using PebbleJar.Api.Endpoints;
 using PebbleJar.Application.Interfaces;
 using PebbleJar.Domain;
 using PebbleJar.Infrastructure;
@@ -45,7 +46,7 @@ builder.Services.AddScoped<IAccountRepository, SqliteAccountRepository>();
 builder.Services.AddScoped<ITransactionRepository, SqliteTransactionRepository>();
 builder.Services.AddValidation();
 
-builder.Services.AddAkahu(builder.Configuration);
+builder.Services.AddAkahuService(builder.Configuration);
 
 # endregion
 
@@ -62,6 +63,8 @@ app.UseHttpsRedirection();
 
 app.MapGet("/health", () => DateTime.UtcNow).WithName("Health");
 
+app.MapAkahuAccountsEndpoints();
+
 app.MapGet("/accounts", GetAccounts).WithName("GetAllAccounts");
 app.MapGet("/accounts/{id:guid}", GetAccountById).WithName("GetAccountById");
 app.MapPost("/accounts", AddAccount).WithName("AddAccount")
@@ -73,6 +76,7 @@ app.MapGet("/transactions/{id:guid}", GetTransactionById).WithName("GetTransacti
 app.MapPost("/transactions", AddTransaction).WithName("AddTransaction");
 
 app.MapPost("/seed", SeedData).WithName("SeedData");
+
 if (app.Environment.IsDevelopment())
 {
     app.MapGet("/test-akahu", async (

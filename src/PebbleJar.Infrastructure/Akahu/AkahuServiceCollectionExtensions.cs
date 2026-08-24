@@ -11,7 +11,7 @@ namespace PebbleJar.Infrastructure.Akahu;
 /// </summary>
 public static class AkahuServiceCollectionExtensions
 {
-    public static IServiceCollection AddAkahu(
+    public static IServiceCollection AddAkahuService(
         this IServiceCollection services,
         IConfiguration configuration)
     {
