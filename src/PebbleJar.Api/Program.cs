@@ -39,8 +39,8 @@ builder.Services.AddRequestTimeouts(options =>
 });
 builder.Services.AddDbContext<PebbleJarDbContext>(options =>
     options.UseSqlite(
-        builder.Configuration.GetConnectionString("PebbleJar")
-));
+        builder.Configuration.GetConnectionString("PebbleJar"))
+    .UseSnakeCaseNamingConvention());
 
 builder.Services.AddScoped<IAccountRepository, SqliteAccountRepository>();
 builder.Services.AddScoped<ITransactionRepository, SqliteTransactionRepository>();

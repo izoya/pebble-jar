@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/Solution Items/">
+    <File Path="commands.md" />
     <File Path="example.env" />
   </Folder>
   <Folder Name="/src/">

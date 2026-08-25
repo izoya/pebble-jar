@@ -1,12 +1,20 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PebbleJar.Domain;
 
-namespace PebbleJar.Infrastructure.Data
+namespace PebbleJar.Infrastructure.Data;
+
+public sealed class PebbleJarDbContext(
+    DbContextOptions<PebbleJarDbContext> options) 
+    : DbContext(options)
 {
-    public sealed class PebbleJarDbContext(DbContextOptions<PebbleJarDbContext> options) 
-        : DbContext(options)
+    public DbSet<Account> Accounts => Set<Account>();
+    //public DbSet<Transaction> Transactions => Set<Transaction>();
+    public DbSet<FinancialInstitution> FinancialInstitutions
+        => Set<FinancialInstitution>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        public DbSet<Account> Accounts => Set<Account>();
-        public DbSet<Transaction> Transactions => Set<Transaction>();
+        modelBuilder.ApplyConfigurationsFromAssembly(
+            typeof(PebbleJarDbContext).Assembly);
     }
 }

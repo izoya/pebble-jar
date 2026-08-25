@@ -5,10 +5,18 @@ public enum Currency
     NZD = 1,
     USD = 2,
 }
+public enum AccountStatus
+{
+    Active = 1,
+    Inactive = 2,
+}
 
 public class Account
 {
-    public Guid Id { get; } = Guid.NewGuid();
+    /// <summary>
+    /// Inner ID
+    /// </summary>
+    public Guid Id { get; init; } = Guid.NewGuid();
     public required string Name
     {
         get;
@@ -16,21 +24,34 @@ public class Account
             throw new ArgumentException("Account Name could not be empty")
             : value;
     }
-    public required string AccountNumber
-    {
-        get;
-        init => field = string.IsNullOrWhiteSpace(value) ?
-            throw new ArgumentException("Account Number could not be empty")
-            : value;
-    }
+    public string? AccountNumber { get; init; }
+
+    public required Guid FinancialInstitutionId { get; init; }
+    public FinancialInstitution FinancialInstitution { get; init; } = null!; // 1:M
+
+    public ConnectionProvider? ConnectionProvider { get; init; }
+
+    /// <summary>
+    /// Account ID from connection provider.
+    /// </summary>
+    public string? ExternalId { get; init; }
+
+    public required AccountStatus Status { get; set; }
+
     public Currency Currency { get; set; } = Currency.NZD;
 
-    private decimal CurrentBalance;
+    public DateTimeOffset CreatedAt { get; init; } = DateTime.UtcNow;
+
+    public DateTimeOffset UpdatedAt { get; private set; } = DateTime.UtcNow;
+
+    public string? SourcePayloadJson { get; private set; }
+
+    public DateTimeOffset? SourceFetchedAt { get; private set; }
+
+    //private decimal CurrentBalance;
 
     public override string ToString()
     {
         return $"[Account] Name: {Name}, AccountNumber: {AccountNumber}, Currency: {Currency}..";
     }
-
 }
-
