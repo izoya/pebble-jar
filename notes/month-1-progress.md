@@ -28,6 +28,14 @@ flowchart TD
  SQLite would fit.
 
 ## Week3
+User journey:
+```
+Akahu connection
+    → available accounts (preview)
+        → user selects
+            → local saved accounts
+                → later sync enabled accounts
+```
 
 ## Week4
 
