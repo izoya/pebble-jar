@@ -44,3 +44,8 @@ dotnet user-secrets -p src/PebbleJar.Api set "Akahu:AppIdToken" "..."
 
 
 ## Security notes
+
+
+## Limitations
+- The App is a single-user - purely for simplicity reason. 
+  Multi-user support later requires associating accounts and tokens with a local user.

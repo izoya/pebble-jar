@@ -1,31 +1,51 @@
-﻿using PebbleJar.Application.Interfaces;
+﻿using Microsoft.EntityFrameworkCore;
+using PebbleJar.Application.Interfaces;
 using PebbleJar.Domain;
+using PebbleJar.Infrastructure.Data;
 
 namespace PebbleJar.Infrastructure.Repositories
 {
-    public class SqliteAccountRepository : IAccountRepository
+    public class SqliteAccountRepository(
+        PebbleJarDbContext dbContext)
+        : IAccountRepository
     {
-        public Task AddAsync(Account account)
+        public async Task AddAsync(Account account)
+        {
+            ArgumentNullException.ThrowIfNull(account);
+
+            dbContext.Accounts.Add(account);
+            await dbContext.SaveChangesAsync();
+        }
+
+        public async Task AddManyAsync(IEnumerable<Account> accounts)
+        {
+            ArgumentNullException.ThrowIfNull(accounts);
+
+            dbContext.Accounts.AddRange(accounts);
+            await dbContext.SaveChangesAsync();
+        }
+
+        public async Task DeleteAsync(Account account)
         {
             throw new NotImplementedException();
         }
 
-        public Task DeleteAsync(Account account)
+        public async Task<Account?> GetByIdAsync(Guid id, CancellationToken token)
         {
             throw new NotImplementedException();
         }
 
-        public Task<Account?> GetByIdAsync(Guid id, CancellationToken token)
+        public async Task<IReadOnlyList<Account>> ListAsync(CancellationToken token)
         {
-            throw new NotImplementedException();
+            return await dbContext.Accounts
+                // No changes tracking required
+                .AsNoTracking()
+                .OrderBy(x => x.Status)
+                .ThenBy(x => x.Name)
+                .ToListAsync(token);
         }
 
-        public Task<IReadOnlyList<Account>> ListAsync(CancellationToken token)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task UpdateAsync(Account account)
+        public async Task UpdateAsync(Account account)
         {
             throw new NotImplementedException();
         }

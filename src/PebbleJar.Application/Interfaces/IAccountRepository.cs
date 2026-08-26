@@ -7,6 +7,7 @@ namespace PebbleJar.Application.Interfaces
         Task<Account?> GetByIdAsync(Guid id, CancellationToken token);
         Task<IReadOnlyList<Account>> ListAsync(CancellationToken token);
         Task AddAsync(Account account);
+        Task AddManyAsync(IEnumerable<Account> accounts);
         Task UpdateAsync(Account account);
         Task DeleteAsync(Account account);
     }

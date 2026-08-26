@@ -38,6 +38,8 @@ public class Account
 
     public required AccountStatus Status { get; set; }
 
+    public bool IsSyncEnabled { get; private set; }
+
     public Currency Currency { get; set; } = Currency.NZD;
 
     public DateTimeOffset CreatedAt { get; init; } = DateTime.UtcNow;
@@ -47,6 +49,10 @@ public class Account
     public string? SourcePayloadJson { get; private set; }
 
     public DateTimeOffset? SourceFetchedAt { get; private set; }
+
+    public void EnableSync() => IsSyncEnabled = true;
+
+    public void DisableSync() => IsSyncEnabled = false;
 
     //private decimal CurrentBalance;
 

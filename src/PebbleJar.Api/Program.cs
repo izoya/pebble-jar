@@ -30,6 +30,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
         JsonNamingPolicy.SnakeCaseLower;
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
 });
+
 builder.Services.AddRequestTimeouts(options =>
 {
     options.DefaultPolicy = new RequestTimeoutPolicy
@@ -37,12 +38,14 @@ builder.Services.AddRequestTimeouts(options =>
         Timeout = TimeSpan.FromSeconds(10)
     };
 });
+
 builder.Services.AddDbContext<PebbleJarDbContext>(options =>
     options.UseSqlite(
         builder.Configuration.GetConnectionString("PebbleJar"))
     .UseSnakeCaseNamingConvention());
 
 builder.Services.AddScoped<IAccountRepository, SqliteAccountRepository>();
+builder.Services.AddScoped<IFinancialInstitutionRepository, SqliteFinancialInstitutionRepository>();
 builder.Services.AddScoped<ITransactionRepository, SqliteTransactionRepository>();
 builder.Services.AddValidation();
 
