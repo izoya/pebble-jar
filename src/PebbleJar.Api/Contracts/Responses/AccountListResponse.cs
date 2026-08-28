@@ -2,7 +2,7 @@ using PebbleJar.Domain;
 
 namespace PebbleJar.Api.Contracts.Responses;
 
-public sealed record AccountReviewResponse(
+public sealed record AccountListResponse(
     Guid Id,
     string Name,
     string? AccountNumber,

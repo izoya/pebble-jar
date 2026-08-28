@@ -68,11 +68,7 @@ app.MapGet("/health", () => DateTime.UtcNow).WithName("Health");
 
 app.MapAkahuAccountsEndpoints();
 
-app.MapGet("/accounts", GetAccounts).WithName("GetAllAccounts");
-app.MapGet("/accounts/{id:guid}", GetAccountById).WithName("GetAccountById");
-app.MapPost("/accounts", AddAccount).WithName("AddAccount")
-    // Example of an endpoint-specific timeout
-    .WithRequestTimeout(TimeSpan.FromSeconds(30));
+//app.MapGet("/accounts/{id:guid}", GetAccountById).WithName("GetAccountById");
 
 app.MapGet("/transactions", GetTransactions).WithName("GetAllTransactions");
 app.MapGet("/transactions/{id:guid}", GetTransactionById).WithName("GetTransactionById");
@@ -99,18 +95,10 @@ if (app.Environment.IsDevelopment())
 
 
 # region Account Endpoints
-static async Task<IReadOnlyList<Account>> GetAccounts(IAccountRepository repository, CancellationToken token)
-{
-    return await repository.ListAsync(token);
-}
-static async Task<Account?> GetAccountById(IAccountRepository repository, Guid id, CancellationToken token)
-{
-    return await repository.GetByIdAsync(id, token);
-}
-static async Task AddAccount(IAccountRepository repository, Account account)
-{
-    await repository.AddAsync(account);
-}
+//static async Task<Account?> GetAccountById(IAccountRepository repository, Guid id, CancellationToken token)
+//{
+//    return await repository.GetByIdAsync(id, token);
+//}
 # endregion
 
 # region Transaction Endpoints

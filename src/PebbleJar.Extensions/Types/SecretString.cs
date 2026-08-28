@@ -10,8 +10,8 @@ using System.Text.Json.Serialization;
 
 namespace PebbleJar.Extensions.Types
 {
-    [TypeConverter(typeof(SecretStringTypeConverter))]
     [DebuggerDisplay("[REDACTED]")]
+    [TypeConverter(typeof(SecretStringTypeConverter))]
     [JsonConverter(typeof(SecretStringJsonConverter))]
     public sealed class SecretString(string Value)
     {

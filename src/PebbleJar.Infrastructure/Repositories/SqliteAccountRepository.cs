@@ -25,6 +25,14 @@ namespace PebbleJar.Infrastructure.Repositories
             await dbContext.SaveChangesAsync();
         }
 
+        public async Task UpdateManyAsync(IEnumerable<Account> accounts)
+        {
+            ArgumentNullException.ThrowIfNull(accounts);
+
+            dbContext.Accounts.UpdateRange(accounts);
+            await dbContext.SaveChangesAsync();
+        }
+
         public async Task DeleteAsync(Account account)
         {
             throw new NotImplementedException();
@@ -39,7 +47,9 @@ namespace PebbleJar.Infrastructure.Repositories
         {
             return await dbContext.Accounts
                 // No changes tracking required
-                .AsNoTracking()
+                //.AsNoTracking()
+                // Eager loading
+                .Include(account => account.FinancialInstitution)
                 .OrderBy(x => x.Status)
                 .ThenBy(x => x.Name)
                 .ToListAsync(token);

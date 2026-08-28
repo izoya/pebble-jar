@@ -1,3 +1,7 @@
+using PebbleJar.Domain.Abstractions;
+using System.Security.Principal;
+using System.Text.Json;
+
 namespace PebbleJar.Domain;
 
 public enum Currency
@@ -11,7 +15,7 @@ public enum AccountStatus
     Inactive = 2,
 }
 
-public class Account
+public class Account : IAuditable
 {
     /// <summary>
     /// Inner ID
@@ -42,10 +46,6 @@ public class Account
 
     public Currency Currency { get; set; } = Currency.NZD;
 
-    public DateTimeOffset CreatedAt { get; init; } = DateTime.UtcNow;
-
-    public DateTimeOffset UpdatedAt { get; private set; } = DateTime.UtcNow;
-
     public string? SourcePayloadJson { get; private set; }
 
     public DateTimeOffset? SourceFetchedAt { get; private set; }
@@ -59,5 +59,11 @@ public class Account
     public override string ToString()
     {
         return $"[Account] Name: {Name}, AccountNumber: {AccountNumber}, Currency: {Currency}..";
+    }
+
+    public void SetPayloadJson<T>(T payload)
+    {
+        this.SourcePayloadJson = JsonSerializer.Serialize(payload);
+        this.SourceFetchedAt = DateTime.UtcNow;
     }
 }

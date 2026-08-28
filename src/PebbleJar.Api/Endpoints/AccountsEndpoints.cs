@@ -12,20 +12,113 @@ public static class AccountsEndpoints
     public static IEndpointRouteBuilder MapAkahuAccountsEndpoints(
         this IEndpointRouteBuilder endpoints)
     {
-        endpoints.MapPost("/accounts/refresh", RefreshAccountsAsync)
-            .WithName("RefreshAccounts");
+        endpoints.MapGet("/accounts/refresh", RefreshAccountsAsync)
+            .WithName("RefreshAccounts")
+            // Example of an endpoint-specific timeout
+            .WithRequestTimeout(TimeSpan.FromSeconds(30));
+        endpoints.MapGet("/accounts", GetAccounts)
+            .WithName("GetAccounts");
 
         return endpoints;
     }
 
-    private static async Task<Ok<IReadOnlyList<AccountReviewResponse>>> RefreshAccountsAsync(
+    public static async Task<Ok<IReadOnlyList<AccountListResponse>>> GetAccounts(
+        IAccountRepository accounts,
+        CancellationToken token)
+    {
+        var result = (await accounts.ListAsync(token))
+            .Select(ToAccountListResponse())
+            .ToList();
+
+        return TypedResults.Ok<IReadOnlyList<AccountListResponse>>(result);
+    }
+
+    private static async Task<Ok<IReadOnlyList<AccountListResponse>>> RefreshAccountsAsync(
         AkahuClient akahuClient,
         IFinancialInstitutionRepository institutions,
         IAccountRepository accounts,
         CancellationToken token)
     {
         var response = await akahuClient.ListAccountsAsync(token);
+        var akahuAccountsByExternalId = response.Items
+            .ToDictionary(acc => acc.Id);
 
+        var storedAccounts = await accounts.ListAsync(token);
+
+        var institutionsByName =
+            await UpdateFinancialInstitutions(institutions, response, token);
+        var knownAkahuAccountIds =
+            await UpdateKnownAkahuAccounts(accounts, akahuAccountsByExternalId, storedAccounts);
+        await InsertAkahuAccounts(accounts, response, institutionsByName, knownAkahuAccountIds);
+
+        var institutionsById = institutionsByName.Values
+            .ToDictionary(institution => institution.Id);
+
+        var reviewAccounts = (await accounts.ListAsync(token))
+            .Select(ToAccountListResponse())
+            .ToList();
+
+        return TypedResults.Ok<IReadOnlyList<AccountListResponse>>(reviewAccounts);
+    }
+
+    private static Func<Account, AccountListResponse> ToAccountListResponse()
+    {
+        return account => new AccountListResponse(
+            account.Id,
+            account.Name,
+            account.AccountNumber,
+            account.FinancialInstitutionId,
+            account.FinancialInstitution.Name,
+            account.Currency,
+            account.Status,
+            account.IsSyncEnabled);
+    }
+
+    private static async Task InsertAkahuAccounts(IAccountRepository accounts, AkahuListResponse<AkahuAccount> response, Dictionary<string, FinancialInstitution> institutionsByName, HashSet<string> knownAkahuAccountIds)
+    {
+        var accountsToAdd = response.Items
+            .Where(account => !knownAkahuAccountIds.Contains(account.Id))
+            .Select(account => ToAccount(account, institutionsByName))
+            .ToList();
+
+        if (accountsToAdd.Count > 0)
+        {
+            await accounts.AddManyAsync(accountsToAdd);
+        }
+    }
+
+    private static async Task<HashSet<string>> UpdateKnownAkahuAccounts(
+        IAccountRepository accounts,
+        Dictionary<string, AkahuAccount> akahuAccountsByExternalId,
+        IReadOnlyList<Account> storedAccounts)
+    {
+        var akahuAccountsToUpdate = storedAccounts
+            .Where(account => account.ConnectionProvider == ConnectionProvider.Akahu)
+            .Where(account => account.ExternalId is not null
+                // Ensure the account we stored is not stale (still present in Akahu response)
+                && akahuAccountsByExternalId.ContainsKey(account.ExternalId))
+            .ToList();
+
+        foreach (var account in akahuAccountsToUpdate)
+        {
+            account.SetPayloadJson(
+                akahuAccountsByExternalId[account.ExternalId!]);
+        }
+
+        await accounts.UpdateManyAsync(akahuAccountsToUpdate);
+
+        var knownAkahuAccountIds = akahuAccountsToUpdate
+            .Select(account => account.ExternalId)
+            .OfType<string>()
+            .ToHashSet(StringComparer.Ordinal);
+        return knownAkahuAccountIds;
+    }
+
+    private static async Task<Dictionary<string, FinancialInstitution>> UpdateFinancialInstitutions(
+        IFinancialInstitutionRepository institutions,
+        AkahuListResponse<AkahuAccount> response,
+        CancellationToken token)
+    {
         var existingInstitutions = await institutions.ListAsync(token);
         var existingNames = existingInstitutions
             .Select(institution => institution.Name)
@@ -42,7 +135,7 @@ public static class AccountsEndpoints
 
         if (missingInstitutions.Count > 0)
         {
-            await institutions.AddManyAsync(missingInstitutions, token);
+            await institutions.AddManyAsync(missingInstitutions);
         }
 
         var institutionsByName = existingInstitutions
@@ -51,64 +144,36 @@ public static class AccountsEndpoints
                 institution => institution.Name,
                 StringComparer.OrdinalIgnoreCase);
 
-        var storedAccounts = await accounts.ListAsync(token);
-        var knownAkahuAccountIds = storedAccounts
-            .Where(account => account.ConnectionProvider == ConnectionProvider.Akahu)
-            .Select(account => account.ExternalId)
-            .OfType<string>()
-            .ToHashSet(StringComparer.Ordinal);
-
-        var accountsToAdd = response.Items
-            .Where(account => knownAkahuAccountIds.Add(account.Id))
-            .Select(account => ToAccount(account, institutionsByName))
-            .ToList();
-
-        if (accountsToAdd.Count > 0)
-        {
-            await accounts.AddManyAsync(accountsToAdd);
-        }
-
-        var institutionsById = institutionsByName.Values
-            .ToDictionary(institution => institution.Id);
-
-        var reviewAccounts = (await accounts.ListAsync(token))
-            .Select(account => new AccountReviewResponse(
-                account.Id,
-                account.Name,
-                account.AccountNumber,
-                account.FinancialInstitutionId,
-                institutionsById[account.FinancialInstitutionId].Name,
-                account.Currency,
-                account.Status,
-                account.IsSyncEnabled))
-            .ToList();
-
-        return TypedResults.Ok<IReadOnlyList<AccountReviewResponse>>(reviewAccounts);
+        return institutionsByName;
     }
 
     private static Account ToAccount(
-        AkahuAccount account,
-        IReadOnlyDictionary<string, FinancialInstitution> institutionsByName)
+        AkahuAccount AkahuAccount,
+        Dictionary<string, FinancialInstitution> InstitutionsByName)
     {
-        var institutionName = account.Connection?.Name;
+        var institutionName = AkahuAccount.Connection?.Name;
 
         if (string.IsNullOrWhiteSpace(institutionName) ||
-            !institutionsByName.TryGetValue(institutionName, out var institution))
+            !InstitutionsByName.TryGetValue(institutionName, out var institution))
         {
             throw new InvalidOperationException(
-                $"Akahu account '{account.Id}' has no matching financial institution.");
+                $"Akahu AkahuAccount '{AkahuAccount.Id}' has no matching financial institution.");
         }
 
-        return new Account
+        var account = new Account
         {
-            Name = account.Name ?? "Undefined",
-            AccountNumber = account.FormattedAccount,
+            Name = AkahuAccount.Name ?? "Undefined",
+            AccountNumber = AkahuAccount.FormattedAccount,
             FinancialInstitutionId = institution.Id,
             ConnectionProvider = ConnectionProvider.Akahu,
-            ExternalId = account.Id,
-            Status = ToAccountStatus(account.Status),
-            Currency = ToCurrency(account.Balance?.Currency),
+            ExternalId = AkahuAccount.Id,
+            Status = ToAccountStatus(AkahuAccount.Status),
+            Currency = ToCurrency(AkahuAccount.Balance?.Currency),
         };
+
+        account.SetPayloadJson(AkahuAccount);
+
+        return account;
     }
 
     private static AccountStatus ToAccountStatus(AkahuAccountStatus? status) =>
