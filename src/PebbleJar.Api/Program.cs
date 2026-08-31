@@ -66,7 +66,7 @@ app.UseHttpsRedirection();
 
 app.MapGet("/health", () => DateTime.UtcNow).WithName("Health");
 
-app.MapAkahuAccountsEndpoints();
+app.MapAccountsEndpoints();
 
 //app.MapGet("/accounts/{id:guid}", GetAccountById).WithName("GetAccountById");
 
@@ -176,7 +176,7 @@ static void Tmp()
 
     //var date = new DateOnly(2026, 8, 5);
     //var monthlyExpenses = allTransactions
-    //    .Where(t => t.Type == TransactionType.Debit)
+    //    .Where(t => t.Type == AkahuTransactionType.Debit)
     //    .Where(t => t.Date.Year == date.Year && t.Date.Month == date.Month)
     //    .Select(t => t);
     //Console.WriteLine($"--------------------------\nExpenses in {date.Month}/{date.Year}: \n--------------------------");
@@ -186,11 +186,11 @@ static void Tmp()
     //Console.WriteLine($"--------------------------\nTotal monthly expenses: {Math.Abs(totalMonthlyExpenses):C2}\n--------------------------");
 
     //var expensesByCategory = allTransactions
-    //    .GroupBy(t => t.Category)
-    //    .Select(g => new { Category = g.Key, Total = g.Sum(t => t.Amount) });
+    //    .GroupBy(t => t.AkahuTransactionCategory)
+    //    .Select(g => new { AkahuTransactionCategory = g.Key, Total = g.Sum(t => t.Amount) });
 
     //foreach (var group in expensesByCategory)
     //{
-    //    Console.WriteLine($"{group.Category}, Total: {Math.Abs(group.Total):C2}");
+    //    Console.WriteLine($"{group.AkahuTransactionCategory}, Total: {Math.Abs(group.Total):C2}");
     //}
 }

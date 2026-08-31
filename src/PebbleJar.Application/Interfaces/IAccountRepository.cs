@@ -1,6 +1,7 @@
 ﻿using PebbleJar.Domain;
 
 namespace PebbleJar.Application.Interfaces;
+
 public interface IAccountRepository
 {
     Task<Account?> GetByIdAsync(Guid id, CancellationToken token);

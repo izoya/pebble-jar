@@ -19,7 +19,7 @@ public class Helpers
             Currency = Currency.NZD,
             FinancialInstitutionId = bank.Id,
             Status = AccountStatus.Active,
-            
+
         };
         var testAccount = new Account()
         {

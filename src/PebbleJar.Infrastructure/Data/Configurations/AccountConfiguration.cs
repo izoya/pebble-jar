@@ -1,8 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PebbleJar.Domain;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace PebbleJar.Infrastructure.Data.Configurations
 {

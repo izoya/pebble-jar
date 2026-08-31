@@ -9,7 +9,7 @@ namespace PebbleJar.Api.Endpoints;
 
 public static class AccountsEndpoints
 {
-    public static IEndpointRouteBuilder MapAkahuAccountsEndpoints(
+    public static IEndpointRouteBuilder MapAccountsEndpoints(
         this IEndpointRouteBuilder endpoints)
     {
         endpoints.MapGet("/accounts/refresh", RefreshAccountsAsync)

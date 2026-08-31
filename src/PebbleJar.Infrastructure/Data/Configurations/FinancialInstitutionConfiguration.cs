@@ -1,9 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using PebbleJar.Domain;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace PebbleJar.Infrastructure.Data.Configurations;
 
