@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PebbleJar.Infrastructure.Akahu.Models;
 using System.Net.Http.Headers;
@@ -26,7 +27,8 @@ namespace PebbleJar.Infrastructure.Akahu
                 endpoint, response, token);
         }
 
-        public async Task<AkahuListResponse<AkahuAccount>> ListAccountsAsync(CancellationToken token)
+        public async Task<AkahuListResponse<AkahuAccount>> ListAccountsAsync(
+            CancellationToken token)
         {
             string endpoint = "accounts";
             using var request = PrepareRequestFor(endpoint);
@@ -35,6 +37,57 @@ namespace PebbleJar.Infrastructure.Akahu
             response.EnsureSuccessStatusCode();
 
             return await IntoAkahuResponse<AkahuListResponse<AkahuAccount>>(
+                endpoint, response, token);
+        }
+
+        public async Task<AkahuListResponse<AkahuTransaction>> ListTransactionsPaginatedAsync(
+            DateTimeOffset? start,
+            DateTimeOffset? end,
+            string? cursor,
+            CancellationToken token
+            )
+        {
+            string endpoint = "transactions";
+            var parameters = new Dictionary<string, string?>
+                {
+                    ["start"] = start?.ToString(),
+                    ["end"] = end?.ToString(),
+                    ["cursor"] = cursor,
+                };
+
+            using var request = PrepareRequestFor(
+                QueryHelpers.AddQueryString(endpoint, parameters));
+            using var response = await httpClient.SendAsync(request, token);
+
+            response.EnsureSuccessStatusCode();
+
+            return await IntoAkahuResponse<AkahuListResponse<AkahuTransaction>>(
+                endpoint, response, token);
+        }
+
+        public async Task<AkahuListResponse<AkahuTransaction>> ListAccountTransactionsPaginatedAsync(
+            string accountId, 
+            DateTimeOffset? start,
+            DateTimeOffset? end,
+            string? cursor,
+            CancellationToken token
+            )
+        {
+            string endpoint = $"accounts/{Uri.EscapeDataString(accountId)}/transactions";
+            var parameters = new Dictionary<string, string?>
+            {
+                ["start"] = start?.ToString(),
+                ["end"] = end?.ToString(),
+                ["cursor"] = cursor,
+            };
+
+            using var request = PrepareRequestFor(
+                QueryHelpers.AddQueryString(endpoint, parameters));
+            using var response = await httpClient.SendAsync(request, token);
+
+            response.EnsureSuccessStatusCode();
+
+            return await IntoAkahuResponse<AkahuListResponse<AkahuTransaction>>(
                 endpoint, response, token);
         }
 
@@ -69,7 +122,6 @@ namespace PebbleJar.Infrastructure.Akahu
                 options.AppIdToken.Reveal());
 
             return request;
-
         }
 
         private void LogUnknownFields<TResponse>(

@@ -3,47 +3,6 @@ using System.Text.Json.Serialization;
 
 namespace PebbleJar.Infrastructure.Akahu.Models;
 
-public abstract class AkahuDto
-{
-    [JsonExtensionData]
-    public Dictionary<string, JsonElement> UnknownFields { get; init; } = [];
-}
-
-public abstract class AkahuResponseBase : AkahuDto
-{
-    [JsonPropertyName("success")]
-    public required bool Success { get; init; }
-
-    public abstract IEnumerable<AkahuDto> ListItems();
-}
-
-public sealed class AkahuSingleResponse<T> : AkahuResponseBase
-    where T : AkahuDto
-{
-    [JsonPropertyName("item")]
-    public required T Item { get; init; }
-
-    public override IEnumerable<AkahuDto> ListItems() => [Item];
-}
-
-public sealed class AkahuListResponse<T> : AkahuResponseBase
-    where T : AkahuDto
-{
-    [JsonPropertyName("items")]
-    public required IReadOnlyList<T> Items { get; init; }
-
-    public override IEnumerable<AkahuDto> ListItems() => Items;
-}
-
-public sealed class AkahuUser : AkahuDto
-{
-    [JsonPropertyName("_id")]
-    public required string Id { get; init; }
-
-    [JsonPropertyName("access_granted_at")]
-    public required DateTimeOffset AccessGrantedAt { get; init; }
-}
-
 public sealed class AkahuAccount : AkahuDto
 {
     [JsonPropertyName("_id")]
@@ -132,7 +91,7 @@ public enum AkahuAccountStatus
 /// <summary>
 /// Holds information about original account provider.
 /// </summary>
-public sealed class AkahuConnection
+public sealed class AkahuConnection : AkahuDto
 {
     [JsonPropertyName("_id")]
     public required string Id { get; init; }
@@ -147,7 +106,7 @@ public sealed class AkahuConnection
     public string? ConnectionType { get; init; }
 }
 
-public sealed class AkahuBalance
+public sealed class AkahuBalance: AkahuDto
 {
     [JsonPropertyName("currency")]
     public required string Currency { get; init; }
@@ -165,7 +124,7 @@ public sealed class AkahuBalance
     public bool? Overdrawn { get; init; }
 }
 
-public sealed class AkahuRefreshed
+public sealed class AkahuRefreshed: AkahuDto
 {
     [JsonPropertyName("balance")]
     public DateTimeOffset? Balance { get; init; }
