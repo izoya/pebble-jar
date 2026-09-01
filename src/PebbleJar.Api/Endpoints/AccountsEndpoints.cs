@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Http.HttpResults;
+using PebbleJar.Api.Contracts.Requests;
 using PebbleJar.Api.Contracts.Responses;
 using PebbleJar.Application.Interfaces;
 using PebbleJar.Domain;
@@ -12,12 +13,16 @@ public static class AccountsEndpoints
     public static IEndpointRouteBuilder MapAccountsEndpoints(
         this IEndpointRouteBuilder endpoints)
     {
+        endpoints.MapGet("/accounts", GetAccounts)
+            .WithName("GetAccounts");
+
+        endpoints.MapPatch("/accounts/{accountId:guid}", UpdateAccount)
+            .WithName("UpdateAccount");
+
         endpoints.MapGet("/accounts/refresh", RefreshAccountsAsync)
             .WithName("RefreshAccounts")
             // Example of an endpoint-specific timeout
             .WithRequestTimeout(TimeSpan.FromSeconds(30));
-        endpoints.MapGet("/accounts", GetAccounts)
-            .WithName("GetAccounts");
 
         return endpoints;
     }
@@ -31,6 +36,27 @@ public static class AccountsEndpoints
             .ToList();
 
         return TypedResults.Ok<IReadOnlyList<AccountListResponse>>(result);
+    }
+
+    private static async Task<Results<NoContent, NotFound>> UpdateAccount(
+        Guid accountId,
+        UpdateAccountRequest request,
+        IAccountRepository accounts,
+        CancellationToken token)
+    {
+        var account = await accounts.GetByIdAsync(accountId, token);
+
+        if (account is null) return TypedResults.NotFound();
+
+        if (request.Name is { } name)
+            account.Name = name;
+
+        if (request.IsSyncEnabled is { } isSyncEnabled)
+            account.SetSyncEnabled(isSyncEnabled);
+
+        await accounts.UpdateAsync(account);
+
+        return TypedResults.NoContent();
     }
 
     private static async Task<Ok<IReadOnlyList<AccountListResponse>>> RefreshAccountsAsync(

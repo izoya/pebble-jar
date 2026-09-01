@@ -58,7 +58,10 @@ namespace PebbleJar.Infrastructure.Repositories
 
         public async Task UpdateAsync(Account account)
         {
-            throw new NotImplementedException();
+            ArgumentNullException.ThrowIfNull(account);
+
+            dbContext.Accounts.Update(account);
+            await dbContext.SaveChangesAsync();
         }
     }
 }

@@ -51,9 +51,7 @@ public class Account : IAuditable
 
     public DateTimeOffset? SourceFetchedAt { get; private set; }
 
-    public void EnableSync() => IsSyncEnabled = true;
-
-    public void DisableSync() => IsSyncEnabled = false;
+    public void SetSyncEnabled(bool isSyncEnabled) => IsSyncEnabled = isSyncEnabled;
 
     //private decimal CurrentBalance;
 
