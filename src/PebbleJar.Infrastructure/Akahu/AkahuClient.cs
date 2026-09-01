@@ -15,7 +15,7 @@ namespace PebbleJar.Infrastructure.Akahu
         private readonly AkahuOptions options = options.Value;
 
         public async Task<AkahuSingleResponse<AkahuUser>> GetMeAsync(
-            CancellationToken token)
+            CancellationToken token = default)
         {
             string endpoint = "me";
             using var request = PrepareRequestFor("me");
@@ -28,7 +28,7 @@ namespace PebbleJar.Infrastructure.Akahu
         }
 
         public async Task<AkahuListResponse<AkahuAccount>> ListAccountsAsync(
-            CancellationToken token)
+            CancellationToken token = default)
         {
             string endpoint = "accounts";
             using var request = PrepareRequestFor(endpoint);
@@ -41,11 +41,10 @@ namespace PebbleJar.Infrastructure.Akahu
         }
 
         public async Task<AkahuListResponse<AkahuTransaction>> ListTransactionsPaginatedAsync(
-            DateTimeOffset? start,
-            DateTimeOffset? end,
-            string? cursor,
-            CancellationToken token
-            )
+            DateTimeOffset? start = null,
+            DateTimeOffset? end = null,
+            string? cursor = null,
+            CancellationToken token = default)
         {
             string endpoint = "transactions";
             var parameters = new Dictionary<string, string?>
@@ -67,16 +66,15 @@ namespace PebbleJar.Infrastructure.Akahu
 
         public async Task<AkahuListResponse<AkahuTransaction>> ListAccountTransactionsPaginatedAsync(
             string accountId, 
-            DateTimeOffset? start,
-            DateTimeOffset? end,
-            string? cursor,
-            CancellationToken token
-            )
+            DateTimeOffset? start = null,
+            DateTimeOffset? end = null,
+            string? cursor = null,
+            CancellationToken token = default)
         {
             string endpoint = $"accounts/{Uri.EscapeDataString(accountId)}/transactions";
             var parameters = new Dictionary<string, string?>
             {
-                ["start"] = start?.ToString(),
+                ["start"] = start?.ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'"),
                 ["end"] = end?.ToString(),
                 ["cursor"] = cursor,
             };
@@ -85,12 +83,29 @@ namespace PebbleJar.Infrastructure.Akahu
                 QueryHelpers.AddQueryString(endpoint, parameters));
             using var response = await httpClient.SendAsync(request, token);
 
-            response.EnsureSuccessStatusCode();
+            EnsureResponseSuccess(request, response);
 
             return await IntoAkahuResponse<AkahuListResponse<AkahuTransaction>>(
                 endpoint, response, token);
         }
 
+        private void EnsureResponseSuccess(HttpRequestMessage request, HttpResponseMessage response)
+        {
+            try
+            {
+                response.EnsureSuccessStatusCode();
+            } catch (Exception e)
+            {
+                logger.LogError(e, "Akahu request failed: {StatusCode}, {Method} {Uri}, {ResponseBody}", 
+                    response.StatusCode, request.Method, request.RequestUri, response.Content);
+
+                throw new AkahuRequestException(
+                    request.RequestUri?.ToString(), 
+                    response.StatusCode, 
+                    "Akahu request failed");
+            }
+            
+        }
 
         private async Task<TResponse> IntoAkahuResponse<TResponse>(
             string endpoint,

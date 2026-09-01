@@ -78,7 +78,7 @@ public sealed class AkahuTransaction : AkahuDto
     /// <summary>
     /// The Akahu Account ID that this transaction was migrated from.
     /// </summary>
-    [JsonPropertyName("_migrated")]
+    [JsonPropertyName("_migrated_account")]
     public string? MigratedFromAccountId { get; init; }
 
     [Obsolete("This field is deprecated and should not be used")]

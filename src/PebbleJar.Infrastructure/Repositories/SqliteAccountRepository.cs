@@ -40,7 +40,8 @@ namespace PebbleJar.Infrastructure.Repositories
 
         public async Task<Account?> GetByIdAsync(Guid id, CancellationToken token)
         {
-            throw new NotImplementedException();
+            return await dbContext.Accounts
+                .SingleOrDefaultAsync(x => x.Id == id, token);
         }
 
         public async Task<IReadOnlyList<Account>> ListAsync(CancellationToken token)

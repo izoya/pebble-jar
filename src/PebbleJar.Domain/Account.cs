@@ -20,6 +20,11 @@ public class Account : IAuditable
     /// Inner ID
     /// </summary>
     public Guid Id { get; init; } = Guid.NewGuid();
+    /// <summary>
+    /// Account ID from connection provider.
+    /// </summary>
+    public string? ExternalId { get; init; }
+
     public required string Name
     {
         get;
@@ -34,10 +39,7 @@ public class Account : IAuditable
 
     public ConnectionProvider? ConnectionProvider { get; init; }
 
-    /// <summary>
-    /// Account ID from connection provider.
-    /// </summary>
-    public string? ExternalId { get; init; }
+
 
     public required AccountStatus Status { get; set; }
 

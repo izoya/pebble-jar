@@ -12,5 +12,9 @@ public class FinancialInstitution
             : value;
     }
 
+    public ConnectionProvider? ConnectionProvider { get; init; }
+
+    public string? ExternalId { get; init; }
+
     public ICollection<Account> Accounts { get; init; } = [];
 }

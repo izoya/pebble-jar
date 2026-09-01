@@ -12,7 +12,8 @@ internal class FinancialInstitutionConfiguration
         builder.Property(x => x.Name)
             .IsRequired()
             .HasMaxLength(200);
-        builder.HasIndex(x => x.Name)
+
+        builder.HasIndex(x => new { x.ExternalId, x.Name })
             .IsUnique();
     }
 }
