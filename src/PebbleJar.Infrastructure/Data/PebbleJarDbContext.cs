@@ -9,7 +9,7 @@ public sealed class PebbleJarDbContext(
     : DbContext(options)
 {
     public DbSet<Account> Accounts => Set<Account>();
-    //public DbSet<Transaction> Transactions => Set<Transaction>();
+    public DbSet<Transaction> Transactions => Set<Transaction>();
     public DbSet<FinancialInstitution> FinancialInstitutions
         => Set<FinancialInstitution>();
 

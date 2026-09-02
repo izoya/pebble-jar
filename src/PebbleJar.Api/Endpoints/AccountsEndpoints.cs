@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using PebbleJar.Api.Contracts.Requests;
 using PebbleJar.Api.Contracts.Responses;
 using PebbleJar.Application.Interfaces;
+using PebbleJar.Application.Queries;
 using PebbleJar.Domain;
 using PebbleJar.Infrastructure.Akahu;
 using PebbleJar.Infrastructure.Akahu.Models;
@@ -31,8 +32,10 @@ public static class AccountsEndpoints
         IAccountRepository accounts,
         CancellationToken token)
     {
-        var result = (await accounts.ListAsync(token))
-            .Select(ToAccountListResponse())
+        var result = (await accounts.ListAsync(
+            new AccountQuery(WithProvider: true),
+            token))
+            .Select(ToAccountListResponse)
             .ToList();
 
         return TypedResults.Ok<IReadOnlyList<AccountListResponse>>(result);
@@ -69,27 +72,30 @@ public static class AccountsEndpoints
         var akahuAccountsByExternalId = response.Items
             .ToDictionary(acc => acc.Id);
 
-        var storedAccounts = await accounts.ListAsync(token);
+        var storedAccounts = await accounts.ListAsync(new AccountQuery(), token);
 
-        var institutionsByName =
+        var institutionsByExternalId =
             await UpdateFinancialInstitutions(institutions, response, token);
         var knownAkahuAccountIds =
             await UpdateKnownAkahuAccounts(accounts, akahuAccountsByExternalId, storedAccounts);
-        await InsertAkahuAccounts(accounts, response, institutionsByName, knownAkahuAccountIds);
+        await InsertAkahuAccounts(
+            accounts,
+            response,
+            institutionsByExternalId,
+            knownAkahuAccountIds);
 
-        var institutionsById = institutionsByName.Values
-            .ToDictionary(institution => institution.Id);
-
-        var reviewAccounts = (await accounts.ListAsync(token))
-            .Select(ToAccountListResponse())
+        var reviewAccounts = (await accounts.ListAsync(
+            new AccountQuery(WithProvider: true),
+            token))
+            .Select(ToAccountListResponse)
             .ToList();
 
         return TypedResults.Ok<IReadOnlyList<AccountListResponse>>(reviewAccounts);
     }
 
-    private static Func<Account, AccountListResponse> ToAccountListResponse()
+    private static AccountListResponse ToAccountListResponse(Account account)
     {
-        return account => new AccountListResponse(
+        return new AccountListResponse(
             account.Id,
             account.Name,
             account.AccountNumber,
@@ -100,11 +106,15 @@ public static class AccountsEndpoints
             account.IsSyncEnabled);
     }
 
-    private static async Task InsertAkahuAccounts(IAccountRepository accounts, AkahuListResponse<AkahuAccount> response, Dictionary<string, FinancialInstitution> institutionsByName, HashSet<string> knownAkahuAccountIds)
+    private static async Task InsertAkahuAccounts(
+        IAccountRepository accounts,
+        AkahuListResponse<AkahuAccount> response,
+        Dictionary<string, FinancialInstitution> institutionsByExternalId,
+        HashSet<string> knownAkahuAccountIds)
     {
         var accountsToAdd = response.Items
             .Where(account => !knownAkahuAccountIds.Contains(account.Id))
-            .Select(account => ToAccount(account, institutionsByName))
+            .Select(account => ToAccount(account, institutionsByExternalId))
             .ToList();
 
         if (accountsToAdd.Count > 0)
@@ -168,26 +178,29 @@ public static class AccountsEndpoints
             await institutions.AddManyAsync(missingInstitutions);
         }
 
-        var institutionsByName = existingInstitutions
+        var institutionsByExternalId = existingInstitutions
             .Concat(missingInstitutions)
+            .Where(institution => !string.IsNullOrWhiteSpace(institution.ExternalId))
             .ToDictionary(
-                institution => institution.Name,
-                StringComparer.OrdinalIgnoreCase);
+                institution => institution.ExternalId!,
+                StringComparer.Ordinal);
 
-        return institutionsByName;
+        return institutionsByExternalId;
     }
 
     private static Account ToAccount(
         AkahuAccount AkahuAccount,
-        Dictionary<string, FinancialInstitution> InstitutionsByName)
+        Dictionary<string, FinancialInstitution> InstitutionsByExternalId)
     {
-        var institutionName = AkahuAccount.Connection?.Name;
+        var institutionExternalId = AkahuAccount.Connection?.Id;
 
-        if (string.IsNullOrWhiteSpace(institutionName) ||
-            !InstitutionsByName.TryGetValue(institutionName, out var institution))
+        if (string.IsNullOrWhiteSpace(institutionExternalId) ||
+            !InstitutionsByExternalId.TryGetValue(
+                institutionExternalId,
+                out var institution))
         {
             throw new InvalidOperationException(
-                $"Akahu AkahuAccount '{AkahuAccount.Id}' has no matching financial institution.");
+                $"Akahu account '{AkahuAccount.Id}' has no matching financial institution.");
         }
 
         var account = new Account

@@ -1,32 +1,45 @@
-﻿namespace PebbleJar.Extensions;
+﻿using System.Text;
+
+namespace PebbleJar.Extensions;
 
 public static class Extensions
 {
-    public static void Dump(this object obj)
+    public static string ToDebugString(this object obj)
     {
+        var result = new StringBuilder();
         var name = obj.GetType().Name;
         var properties = obj.GetType().GetProperties();
 
-        Console.WriteLine($"[{name}]");
+        result.Append($"[{name}]\n");
 
         foreach (var property in properties)
         {
-            Console.WriteLine($"{property.Name}: {property.GetValue(obj)}");
+            result.Append($"{property.Name}: {property.GetValue(obj)}");
         }
+
+        return result.ToString();
     }
 
-    public static void Dump<T>(this IEnumerable<T> obj)
+    public static string ToDebugString<T>(this IEnumerable<T> obj)
     {
+        var result = new StringBuilder();
         var type = obj.GetType();
         var count = type.GetProperty("Count")?.GetValue(obj);
         var capacity = type.GetProperty("Capacity")?.GetValue(obj);
 
-        Console.WriteLine($"[{type.Name}<{typeof(T).Name}>]({count}/{capacity})");
+        result.Append($"[{type.Name}<{typeof(T).Name}>]({count}/{capacity})\n");
+
         foreach (var item in obj)
         {
-            item?.Dump();
-            Console.WriteLine();
+            result.Append($"{item?.ToDebugString()}\n");
         }
+
+        return result.ToString();
+    }
+
+    public static void Dump(this object obj)
+    {
+        Console.WriteLine($"{ToDebugString(obj)}");
     }
 }
 

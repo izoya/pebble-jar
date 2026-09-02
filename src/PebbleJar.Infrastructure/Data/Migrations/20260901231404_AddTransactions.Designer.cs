@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PebbleJar.Infrastructure.Data;
 
@@ -10,9 +11,11 @@ using PebbleJar.Infrastructure.Data;
 namespace PebbleJar.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(PebbleJarDbContext))]
-    partial class PebbleJarDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260901231404_AddTransactions")]
+    partial class AddTransactions
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.11");
@@ -167,8 +170,7 @@ namespace PebbleJar.Infrastructure.Data.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("source_payload_json");
 
-                    b.Property<string>("TransactionDateTime")
-                        .IsRequired()
+                    b.Property<DateTimeOffset>("TransactionDateTime")
                         .HasColumnType("TEXT")
                         .HasColumnName("transaction_date_time");
 

@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PebbleJar.Application.Interfaces;
+using PebbleJar.Application.Queries;
 using PebbleJar.Domain;
 using PebbleJar.Infrastructure.Data;
 
@@ -44,13 +45,26 @@ namespace PebbleJar.Infrastructure.Repositories
                 .SingleOrDefaultAsync(x => x.Id == id, token);
         }
 
-        public async Task<IReadOnlyList<Account>> ListAsync(CancellationToken token)
+        public async Task<IReadOnlyList<Account>> ListAsync(
+            AccountQuery query,
+            CancellationToken token)
         {
-            return await dbContext.Accounts
-                // No changes tracking required
-                //.AsNoTracking()
+            ArgumentNullException.ThrowIfNull(query);
+
+            IQueryable<Account> accounts = dbContext.Accounts.AsNoTracking();
+
+            if (query.Ids is { } ids && ids.Length > 0)
+                accounts = accounts.Where(acc => ids.Contains(acc.Id));
+
+
+            if (query.IsSyncEnabled is { } sync)
+                accounts = accounts.Where(acc => acc.IsSyncEnabled == sync);
+
+            if (query.WithProvider is { } withProvider && withProvider == true)
                 // Eager loading
-                .Include(account => account.FinancialInstitution)
+                accounts = accounts.Include(acc => acc.FinancialInstitution);
+
+            return await accounts
                 .OrderBy(x => x.Status)
                 .ThenBy(x => x.Name)
                 .ToListAsync(token);

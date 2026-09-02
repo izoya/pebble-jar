@@ -62,3 +62,6 @@ nunit-*.xml
 # DB
 *.db
 *.db-*
+
+# Temporary remove desktop
+/desktop/

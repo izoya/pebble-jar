@@ -5,11 +5,11 @@ using System.Text.RegularExpressions;
 
 namespace PebbleJar.Infrastructure.Akahu.Mapping;
 
-internal static class AkahuTransactionMapper
+public static class AkahuTransactionMapper
 {
     private const string AkahuDefaultTransactionsGroupKey = "personal_finance";
 
-    internal static MappingResult<Transaction> ToDomain(
+    public static MappingResult<Transaction> ToDomain(
         AkahuTransaction source,
         Guid domainAccountId)
     {
@@ -27,6 +27,8 @@ internal static class AkahuTransactionMapper
             Kind = ToDomainTransactionKind(source.Type, warnings),
             RecognitionData = ToRecognitionData(source),
         };
+
+        transaction.SetPayloadJson(source);
 
         return warnings.Count == 0
             ? new MappingResult<Transaction>.Complete(transaction)
