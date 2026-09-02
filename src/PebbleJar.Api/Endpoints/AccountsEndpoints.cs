@@ -146,17 +146,21 @@ public static class AccountsEndpoints
         CancellationToken token)
     {
         var existingInstitutions = await institutions.ListAsync(token);
-        var existingNames = existingInstitutions
-            .Select(institution => institution.Name)
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var existingExternalIds = existingInstitutions
+            .Select(institution => institution.ExternalId)
+            .ToHashSet(StringComparer.Ordinal);
 
         var missingInstitutions = response.Items
-            .Select(account => account.Connection?.Name)
-            .OfType<string>()
-            .Where(name => !string.IsNullOrWhiteSpace(name))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Where(name => !existingNames.Contains(name))
-            .Select(name => new FinancialInstitution { Name = name })
+            .Select(account => new { Id = account.Connection?.Id, Name = account.Connection?.Name })
+            .Where(x => !string.IsNullOrWhiteSpace(x.Id) && !string.IsNullOrWhiteSpace(x.Name))
+            .Distinct()
+            .Where(x => !existingExternalIds.Contains(x.Id))
+            .Select(x => new FinancialInstitution
+            {
+                Name = x.Name,
+                ExternalId = x.Id,
+                ConnectionProvider = ConnectionProvider.Akahu
+            })
             .ToList();
 
         if (missingInstitutions.Count > 0)

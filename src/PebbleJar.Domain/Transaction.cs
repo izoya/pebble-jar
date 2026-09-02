@@ -1,5 +1,7 @@
-﻿namespace PebbleJar.Domain;
+﻿using PebbleJar.Domain.Abstractions;
+using System.Text.Json;
 
+namespace PebbleJar.Domain;
 
 public enum TransactionType
 {
@@ -7,7 +9,7 @@ public enum TransactionType
     Credit = 2,
 }
 
-public class Transaction
+public class Transaction : IAuditable
 {
     public Guid Id { get; init; } = Guid.NewGuid();
     /// <summary>
@@ -46,26 +48,29 @@ public class Transaction
 
     public TransactionRecognitionData? RecognitionData { get; init; }
 
+    public string? SourcePayloadJson { get; private set; }
+    public DateTimeOffset? SourceFetchedAt { get; private set; }
+
     public virtual Account Account { get; init; } = null!;
 
-
+    public void SetPayloadJson<T>(T payload)
+    {
+        this.SourcePayloadJson = JsonSerializer.Serialize(payload);
+        this.SourceFetchedAt = DateTime.UtcNow;
+    }
 }
 
 public enum TransactionKind
 {
     Unspecified = 0,
-
     GenericDebit,
     GenericCredit,
-
     CardPayment,
     ExternalPayment,
     Transfer,
     StandingOrder,
-
     DirectDebit,
     DirectCredit,
-
     CashWithdrawalOrDeposit,
     Interest,
     Fee,

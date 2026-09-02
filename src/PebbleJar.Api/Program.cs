@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Http.Timeouts;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using PebbleJar.Api.Endpoints;
 using PebbleJar.Application.Interfaces;
 using PebbleJar.Domain;

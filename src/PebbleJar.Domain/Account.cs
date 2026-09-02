@@ -51,6 +51,8 @@ public class Account : IAuditable
 
     public DateTimeOffset? SourceFetchedAt { get; private set; }
 
+    public ICollection<Transaction> Transactions { get; init; } = [];
+
     public void SetSyncEnabled(bool isSyncEnabled) => IsSyncEnabled = isSyncEnabled;
 
     //private decimal CurrentBalance;

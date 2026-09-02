@@ -155,14 +155,11 @@ public class AkahuTransactionMeta : AkahuDto
     /// </summary>
     [JsonPropertyName("particulars")]
     public string? Particulars { get; init; }
-
-
     /// <summary>
     /// The code field set on this transaction
     /// </summary>
     [JsonPropertyName("code")]
     public string? Code { get; init; }
-
     /// <summary>
     /// The reference field set on this transaction
     /// </summary>
@@ -189,10 +186,6 @@ public class AkahuTransactionMeta : AkahuDto
     /// </summary>
     [JsonPropertyName("conversion")]
     public AkahuConversion? Conversion { get; init; }
-
-
-
-
 }
 
 public class AkahuMerchant : AkahuDto
