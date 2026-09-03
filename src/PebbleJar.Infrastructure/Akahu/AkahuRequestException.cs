@@ -8,6 +8,6 @@ public sealed class AkahuRequestException(
     string message,
     Exception? innerException = null) : Exception(message, innerException)
 {
-    public string Endpoint { get; } = endpoint;
+    public string? Endpoint { get; } = endpoint;
     public HttpStatusCode StatusCode { get; } = statusCode;
 }

@@ -83,7 +83,7 @@ public sealed class AkahuTransaction : AkahuDto
 
     [Obsolete("This field is deprecated and should not be used")]
     [JsonPropertyName("hash")]
-    public string Hash { get; init; }
+    public string? Hash { get; init; }
 }
 
 [JsonConverter(typeof(JsonStringEnumConverter<AkahuTransactionType>))]

@@ -161,13 +161,13 @@ public static class AccountsEndpoints
             .ToHashSet(StringComparer.Ordinal);
 
         var missingInstitutions = response.Items
-            .Select(account => new { Id = account.Connection?.Id, Name = account.Connection?.Name })
+            .Select(account => new { account.Connection?.Id, account.Connection?.Name })
             .Where(x => !string.IsNullOrWhiteSpace(x.Id) && !string.IsNullOrWhiteSpace(x.Name))
             .Distinct()
             .Where(x => !existingExternalIds.Contains(x.Id))
             .Select(x => new FinancialInstitution
             {
-                Name = x.Name,
+                Name = x.Name!,
                 ExternalId = x.Id,
                 ConnectionProvider = ConnectionProvider.Akahu
             })
