@@ -26,6 +26,11 @@ In development mode, the OpenAPI document is at `/openapi/v1.json`.
 
 Requests collection: `src/PebbleJar.Api/PebbleJar.Api.http`
 
+Tests:
+```sh
+dotnet test PebbleJar.slnx --no-restore
+```
+
 ### Akahu tokens
 
 Create a personal app at [my.akahu.nz](https://my.akahu.nz/) and follow 
