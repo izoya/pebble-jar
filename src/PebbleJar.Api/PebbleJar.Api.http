@@ -1,15 +1,78 @@
 @PebbleJar.Api_HostAddress = http://localhost:5142
 
+# Run the "Refresh accounts" request first, then copy an account ID below.
+@accountId = 00000000-0000-0000-0000-000000000000
+
 ### Health check
-GET {{PebbleJar.Api_HostAddress}}/health/
+GET {{PebbleJar.Api_HostAddress}}/health
 Accept: application/json
 
-### Accounts
-GET {{PebbleJar.Api_HostAddress}}/accounts/
+
+### Refresh accounts from Akahu
+GET {{PebbleJar.Api_HostAddress}}/accounts/refresh
 Accept: application/json
 
-### Transactions
-GET {{PebbleJar.Api_HostAddress}}/transactions/
+
+### List stored accounts
+GET {{PebbleJar.Api_HostAddress}}/accounts
 Accept: application/json
+
+
+### Rename an account
+PATCH {{PebbleJar.Api_HostAddress}}/accounts/{{accountId}}
+Content-Type: application/json
+
+{
+  "name": "My renamed account"
+}
+
+
+### Turn transaction sync on for an account
+PATCH {{PebbleJar.Api_HostAddress}}/accounts/{{accountId}}
+Content-Type: application/json
+
+{
+  "is_sync_enabled": true
+}
+
+
+### Sync enabled accounts from Akahu
+POST {{PebbleJar.Api_HostAddress}}/transactions/sync
+Content-Type: application/json
+
+{}
+
+
+### Sync one account from a chosen date
+POST {{PebbleJar.Api_HostAddress}}/transactions/sync
+Content-Type: application/json
+
+{
+  "account_id": "{{accountId}}",
+  "from_date": "2026-01-01T00:00:00Z"
+}
+
+
+### Search all stored transactions
+POST {{PebbleJar.Api_HostAddress}}/transactions/search
+Content-Type: application/json
+
+{
+  "page_number": 1,
+  "page_size": 50
+}
+
+
+### Search one account's transactions in a date range
+POST {{PebbleJar.Api_HostAddress}}/transactions/search
+Content-Type: application/json
+
+{
+  "account_id": "{{accountId}}",
+  "from_date": "2026-01-01T00:00:00Z",
+  "to_date": "2026-12-31T23:59:59Z",
+  "page_number": 1,
+  "page_size": 50
+}
 
 
