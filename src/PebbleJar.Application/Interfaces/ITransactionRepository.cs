@@ -7,7 +7,7 @@ namespace PebbleJar.Application.Interfaces;
 public interface ITransactionRepository
 {
     Task<Transaction?> GetByIdAsync(Guid id);
-    Task<PagedResult<Transaction>> ListAsync(
+    Task<TransactionQueryResult> ListAsync(
         TransactionQuery query,
         CancellationToken token);
     Task AddAsync(Transaction transaction);

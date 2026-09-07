@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PebbleJar.Infrastructure.Data;
 
@@ -10,9 +11,11 @@ using PebbleJar.Infrastructure.Data;
 namespace PebbleJar.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(PebbleJarDbContext))]
-    partial class PebbleJarDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260907010048_AlterTransactionsAddPersistentType")]
+    partial class AlterTransactionsAddPersistentType
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.11");
@@ -86,22 +89,6 @@ namespace PebbleJar.Infrastructure.Data.Migrations
                         .HasDatabaseName("ix_accounts_connection_provider_external_id");
 
                     b.ToTable("accounts", (string)null);
-                });
-
-            modelBuilder.Entity("PebbleJar.Domain.DataVersion", b =>
-                {
-                    b.Property<int>("Scope")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("scope");
-
-                    b.Property<int>("Revision")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("revision");
-
-                    b.HasKey("Scope")
-                        .HasName("pk_data_versions");
-
-                    b.ToTable("data_versions", (string)null);
                 });
 
             modelBuilder.Entity("PebbleJar.Domain.FinancialInstitution", b =>

@@ -1,7 +1,6 @@
 ﻿using PebbleJar.Application.Results;
 using PebbleJar.Domain;
 using PebbleJar.Infrastructure.Akahu.Models;
-using System.Text.RegularExpressions;
 
 namespace PebbleJar.Infrastructure.Akahu.Mapping;
 
@@ -38,9 +37,8 @@ public static class AkahuTransactionMapper
 
     private static TransactionRecognitionData ToRecognitionData(AkahuTransaction source)
     {
-        return new TransactionRecognitionData {
-            Description = source.Description,
-
+        return new TransactionRecognitionData
+        {
             // Meta
             Code = source.Meta?.Code,
             Reference = source.Meta?.Reference,

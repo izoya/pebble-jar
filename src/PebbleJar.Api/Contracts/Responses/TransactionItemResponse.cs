@@ -2,7 +2,7 @@ using PebbleJar.Domain;
 
 namespace PebbleJar.Api.Contracts.Responses;
 
-public sealed record TransactionListResponse(
+public sealed record TransactionItemResponse(
     Guid Id,
     Guid AccountId,
     DateTimeOffset TransactionDateTime,

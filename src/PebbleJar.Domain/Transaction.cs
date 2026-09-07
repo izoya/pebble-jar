@@ -31,17 +31,21 @@ public class Transaction : IAuditable
     /// <summary>
     /// User's description
     /// </summary>
-    public string? Description
+    public string? Description { get; set; }
+
+    public required decimal Amount
     {
         get;
-        set => field = string.IsNullOrWhiteSpace(value) ?
-            throw new ArgumentException("Transaction description could not be empty string")
-            : value;
+        init
+        {
+            field = value;
+            Type = value < 0
+                ? TransactionType.Debit
+                : TransactionType.Credit;
+        }
     }
 
-    public required decimal Amount { get; init; }
-
-    public TransactionType Type => Amount < 0 ? TransactionType.Debit : TransactionType.Credit;
+    public TransactionType Type { get; private set; }
 
     public required TransactionCategory Category { get; set; } = TransactionCategory.Default;
     public required TransactionKind Kind { get; init; }
@@ -107,7 +111,6 @@ public enum TransactionCategory
 public record TransactionRecognitionData
 {
     public string? MerchantName { get; init; }
-    public string? Description { get; init; }
     public string? Category { get; init; }
     public string? Group { get; init; }
     public string? CardSuffix { get; init; }

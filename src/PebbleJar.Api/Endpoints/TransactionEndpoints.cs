@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Http.HttpResults;
 using PebbleJar.Api.Contracts.Requests;
 using PebbleJar.Api.Contracts.Responses;
 using PebbleJar.Application.Interfaces;
@@ -30,16 +30,19 @@ public static class TransactionEndpoints
     }
 
     private static async Task<Results<
-        Ok<PagedResponse<TransactionListResponse>>,
+        Ok<TransactionSearchResponse>,
         BadRequest<string>,
         NotFound<string>>>
         GetTransactions(
-        ListTransactionsRequest request,
+        TransactionsListRequest request,
         AkahuClient akahuClient,
         IAccountRepository accountsCtx,
         ITransactionRepository transactionsCtx,
+        ILoggerFactory loggerFactory,
         CancellationToken token)
     {
+        var logger = loggerFactory.CreateLogger(LogCategory);
+
         if (request.AccountId is { } accountId
             && await accountsCtx.GetByIdAsync(accountId, token) is null)
         {
@@ -50,23 +53,33 @@ public static class TransactionEndpoints
             request.AccountId,
             request.FromDate,
             request.ToDate,
+            request.AmountFrom,
+            request.AmountTo,
+            request.Query,
+            request.TransactionType,
+            request.Categories,
+            request.TransactionKinds,
             request.PageNumber ?? 1,
             request.PageSize ?? DefaultPageSize);
 
-        var page = await transactionsCtx.ListAsync(query, token);
+        var result = await transactionsCtx.ListAsync(query, token);
+        var page = result.Transactions;
 
         var transactions = page.Items
             .Select(ToTransactionListResponse)
             .ToList();
 
-        return TypedResults.Ok(new PagedResponse<TransactionListResponse>(
+        var responsePage = new PagedResponse<TransactionItemResponse, TransactionsListRequest>(
             transactions,
+            request,
             page.PageNumber,
             page.PageSize,
             page.TotalCount,
             page.TotalPages,
             page.HasPreviousPage,
-            page.HasNextPage));
+            page.HasNextPage);
+
+        return TypedResults.Ok(new TransactionSearchResponse(responsePage, result.TotalAmount));
 
     }
 
@@ -151,9 +164,9 @@ public static class TransactionEndpoints
     }
 
 
-    private static TransactionListResponse ToTransactionListResponse(Transaction transaction)
+    private static TransactionItemResponse ToTransactionListResponse(Transaction transaction)
     {
-        return new TransactionListResponse(
+        return new TransactionItemResponse(
             transaction.Id,
             transaction.AccountId,
             transaction.TransactionDateTime,

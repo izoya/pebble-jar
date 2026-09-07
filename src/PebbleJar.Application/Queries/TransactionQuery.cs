@@ -1,3 +1,5 @@
+using PebbleJar.Domain;
+
 namespace PebbleJar.Application.Queries;
 
 public sealed record TransactionQuery
@@ -5,13 +7,26 @@ public sealed record TransactionQuery
     public Guid? AccountId { get; }
     public DateTimeOffset? FromDate { get; }
     public DateTimeOffset? ToDate { get; }
+    public string? Query { get; }
+    public int? AmountFrom { get; }
+    public int? AmountTo { get; }
+
+    public TransactionType? TransactionType { get; }
+    public TransactionCategory[]? CategoryIds { get; }
+    public TransactionKind[]? TransactionKindIds { get; }
     public int PageNumber { get; }
     public int PageSize { get; }
 
     public TransactionQuery(
         Guid? accountId,
-        DateTimeOffset? from = null,
-        DateTimeOffset? to = null,
+        DateTimeOffset? fromDate = null,
+        DateTimeOffset? toDate = null,
+        int? amountFrom = null,
+        int? amountTo = null,
+        string? query = null,
+        TransactionType? transactionType = null,
+        TransactionCategory[]? categoryIds = null,
+        TransactionKind[]? transactionKindIds = null,
         int pageNumber = 1,
         int pageSize = 50)
     {
@@ -29,16 +44,30 @@ public sealed record TransactionQuery
                 "Page size must be between 1 and 100.");
         }
 
-        if (from is { } fromDate && to is { } toDate && fromDate > toDate)
+        if (fromDate.HasValue && toDate.HasValue && fromDate > toDate)
         {
             throw new ArgumentException(
-                "FromDate must be earlier than or equal to ToDate.",
-                nameof(from));
+                "FromDate must be earlier than or equal toDate ToDate.",
+                nameof(fromDate));
+        }
+
+
+        if (amountFrom.HasValue && amountTo.HasValue && amountFrom > amountTo)
+        {
+            throw new ArgumentException(
+                "AmountFrom must be less than or equal AmountTo.",
+                 nameof(amountFrom));
         }
 
         AccountId = accountId;
-        FromDate = from;
-        ToDate = to;
+        FromDate = fromDate;
+        ToDate = toDate;
+        AmountFrom = amountFrom;
+        AmountTo = amountTo;
+        Query = query;
+        TransactionType = transactionType;
+        CategoryIds = categoryIds;
+        TransactionKindIds = transactionKindIds;
         PageNumber = pageNumber;
         PageSize = pageSize;
     }

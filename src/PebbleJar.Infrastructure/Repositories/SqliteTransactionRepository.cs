@@ -3,6 +3,7 @@ using PebbleJar.Application.Interfaces;
 using PebbleJar.Application.Queries;
 using PebbleJar.Application.Results;
 using PebbleJar.Domain;
+using PebbleJar.Extensions;
 using PebbleJar.Infrastructure.Data;
 
 namespace PebbleJar.Infrastructure.Repositories;
@@ -105,46 +106,54 @@ public class SqliteTransactionRepository(
             .MaxAsync(t => (DateTimeOffset?)t.TransactionDateTime, token);
     }
 
-    public async Task<PagedResult<Transaction>> ListAsync(
+    public async Task<TransactionQueryResult> ListAsync(
         TransactionQuery query,
         CancellationToken token)
     {
         ArgumentNullException.ThrowIfNull(query);
 
-        IQueryable<Transaction> transactions = dbContext.Transactions
+        IQueryable<Transaction> qb = dbContext.Transactions
             .AsNoTracking();
 
-        if (query.AccountId is { } accountId)
+        qb = qb.WhereIf(query.AccountId.HasValue, t => t.AccountId == query.AccountId)
+            .WhereIf(query.FromDate.HasValue, t => t.TransactionDateTime >= query.FromDate)
+            .WhereIf(query.ToDate.HasValue, t => t.TransactionDateTime <= query.ToDate)
+            .WhereIf(query.AmountFrom.HasValue, t => t.Amount >= query.AmountFrom)
+            .WhereIf(query.AmountTo.HasValue, t => t.Amount <= query.AmountTo)
+            .WhereIf(query.TransactionType.HasValue, t => t.Type == query.TransactionType)
+            .WhereIf(query.CategoryIds is { } catIds && catIds.Length > 0,
+                t => query.CategoryIds.Contains(t.Category))
+            .WhereIf(query.TransactionKindIds is { } kindIds && kindIds.Length > 0,
+                t => query.TransactionKindIds.Contains(t.Kind));
+
+        if (query.Query is { } queryStr)
         {
-            transactions = transactions.Where(t => t.AccountId == accountId);
+            var pattern = $"%{queryStr}%";
+
+            qb = qb.Where(t =>
+                EF.Functions.Like(t.Description, pattern) ||
+                (t.RecognitionData != null &&
+                    (EF.Functions.Like(t.RecognitionData.MerchantName, pattern) ||
+                     EF.Functions.Like(t.RecognitionData.Reference, pattern))));
         }
 
-        if (query.FromDate is { } fromDate)
-        {
-            transactions = transactions.Where(
-                t => t.TransactionDateTime >= fromDate);
-        }
+        var totalCount = await qb.CountAsync(token);
+        var totalAmount = await qb.SumAsync(t => t.Amount, token);
 
-        if (query.ToDate is { } toDate)
-        {
-            transactions = transactions.Where(
-                t => t.TransactionDateTime <= toDate);
-        }
-
-        var totalCount = await transactions.CountAsync(token);
-
-        var items = await transactions
+        var items = await qb
             .OrderByDescending(t => t.TransactionDateTime)
             .ThenByDescending(t => t.Id) // ens consistent pagination
             .Skip((query.PageNumber - 1) * query.PageSize)
             .Take(query.PageSize)
             .ToListAsync(token);
 
-        return new PagedResult<Transaction>(
+        var page = new PagedResult<Transaction>(
             items,
             query.PageNumber,
             query.PageSize,
             totalCount);
+
+        return new TransactionQueryResult(page, totalAmount);
     }
 
     public Task UpdateAsync(Transaction transaction)
