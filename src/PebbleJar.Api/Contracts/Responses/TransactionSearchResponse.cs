@@ -1,11 +1,13 @@
 using PebbleJar.Api.Contracts.Requests;
-using PebbleJar.Application.Queries;
 using PebbleJar.Domain;
+using System.Text.Json.Serialization;
 
 namespace PebbleJar.Api.Contracts.Responses;
 
 public sealed record TransactionSearchResponse(
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     PagedResponse<TransactionItemResponse, TransactionsSearchRequest>? Transactions,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     PagedResponse<GroupedTransactionResponse, TransactionsSearchRequest>? Groups,
     decimal TotalAmount,
     string TimeZoneId);
@@ -23,7 +25,11 @@ public sealed record TransactionItemResponse(
     TransactionRecognitionData? RecognitionData);
 
 public sealed record GroupedTransactionResponse(
-    GroupingKey Key,
+    GroupingKeyResponse Key,
     IReadOnlyList<TransactionItemResponse> Transactions,
     decimal TotalAmount,
     int TotalCount);
+
+public sealed record GroupingKeyResponse(
+    string Type,
+    string Value);

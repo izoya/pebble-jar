@@ -64,7 +64,7 @@ public static class TransactionEndpoints
             GroupedTransactionQueryResult grouped => new TransactionSearchResponse(
                 null,
                 ToPage(grouped.Groups, request, group => new GroupedTransactionResponse(
-                    group.Key,
+                    ToGroupingKeyResponse(group.Key),
                     group.Transactions.Select(MapTransaction).ToList(),
                     group.TotalAmount,
                     group.TotalCount)),
@@ -173,6 +173,23 @@ public static class TransactionEndpoints
             transaction.Category,
             transaction.Kind,
             transaction.RecognitionData);
+    }
+
+    private static GroupingKeyResponse ToGroupingKeyResponse(GroupingKey key)
+    {
+        return key switch
+        {
+            GroupingKey.Date date => new GroupingKeyResponse(
+                "date",
+                DateOnly.FromDateTime(date.Value).ToString("yyyy-MM-dd")),
+            GroupingKey.Type type => new GroupingKeyResponse(
+                "transaction_type",
+                type.Value.ToString()),
+            GroupingKey.Category category => new GroupingKeyResponse(
+                "transaction_category",
+                category.Value.ToString()),
+            _ => throw new NotSupportedException($"Unsupported grouping key {key.GetType().Name}."),
+        };
     }
 
     private static PagedResponse<TResponse, TransactionsSearchRequest> ToPage<TItem, TResponse>(

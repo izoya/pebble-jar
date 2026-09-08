@@ -4,8 +4,6 @@ namespace PebbleJar.Application.Queries;
 
 public sealed record TransactionQuery
 {
-    public const string DefaultTimeZoneId = "UTC";
-
     public Guid? AccountId { get; }
     public DateTimeOffset? FromDate { get; }
     public DateTimeOffset? ToDate { get; }
@@ -68,7 +66,7 @@ public sealed record TransactionQuery
         }
 
         timeZoneId = string.IsNullOrWhiteSpace(timeZoneId)
-            ? TimeZoneInfo.Utc.ToSerializedString()
+            ? TimeZoneInfo.Utc.Id
             : timeZoneId;
 
         try
