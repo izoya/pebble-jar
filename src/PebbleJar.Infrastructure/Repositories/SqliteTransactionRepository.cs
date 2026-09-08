@@ -14,6 +14,10 @@ public class SqliteTransactionRepository(
 {
     private DataScope Scope = DataScope.Transaction;
 
+    private sealed record TimestampedTransaction(
+        Transaction Transaction,
+        DateTimeOffset LocalTimestamp);
+
     public Task AddAsync(Transaction transaction)
     {
         throw new NotImplementedException();
@@ -112,37 +116,50 @@ public class SqliteTransactionRepository(
     {
         ArgumentNullException.ThrowIfNull(query);
 
-        IQueryable<Transaction> qb = dbContext.Transactions
-            .AsNoTracking();
+        IQueryable<Transaction> qb = dbContext.Transactions.AsNoTracking();
 
-        qb = qb.WhereIf(query.AccountId.HasValue, t => t.AccountId == query.AccountId)
-            .WhereIf(query.FromDate.HasValue, t => t.TransactionDateTime >= query.FromDate)
-            .WhereIf(query.ToDate.HasValue, t => t.TransactionDateTime <= query.ToDate)
-            .WhereIf(query.AmountFrom.HasValue, t => t.Amount >= query.AmountFrom)
-            .WhereIf(query.AmountTo.HasValue, t => t.Amount <= query.AmountTo)
-            .WhereIf(query.TransactionType.HasValue, t => t.Type == query.TransactionType)
+        qb = qb.WhereIf(query.AccountId.HasValue, x => x.AccountId == query.AccountId)
+            .WhereIf(query.FromDate.HasValue, x => x.TransactionDateTime >= query.FromDate)
+            .WhereIf(query.ToDate.HasValue, x => x.TransactionDateTime <= query.ToDate)
+            .WhereIf(query.AmountFrom.HasValue, x => x.Amount >= query.AmountFrom)
+            .WhereIf(query.AmountTo.HasValue, x => x.Amount <= query.AmountTo)
+            .WhereIf(query.TransactionType.HasValue, x => x.Type == query.TransactionType)
             .WhereIf(query.CategoryIds is { } catIds && catIds.Length > 0,
-                t => query.CategoryIds.Contains(t.Category))
+                x => query.CategoryIds!.Contains(x.Category))
             .WhereIf(query.TransactionKindIds is { } kindIds && kindIds.Length > 0,
-                t => query.TransactionKindIds.Contains(t.Kind));
+                x => query.TransactionKindIds!.Contains(x.Kind));
 
         if (query.Query is { } queryStr)
         {
             var pattern = $"%{queryStr}%";
+            qb = qb.Where(x =>
+                EF.Functions.Like(x.Description, pattern) ||
+                (x.RecognitionData != null &&
+                    (EF.Functions.Like(x.RecognitionData.MerchantName, pattern) ||
+                     EF.Functions.Like(x.RecognitionData.Reference, pattern))));
+        }
 
-            qb = qb.Where(t =>
-                EF.Functions.Like(t.Description, pattern) ||
-                (t.RecognitionData != null &&
-                    (EF.Functions.Like(t.RecognitionData.MerchantName, pattern) ||
-                     EF.Functions.Like(t.RecognitionData.Reference, pattern))));
+        if (query.Grouping is { } grouping)
+        {
+            var timestampedTransactions = (await qb.ToListAsync(token))
+                .Select(transaction => new TimestampedTransaction(
+                    transaction,
+                    TimeZoneInfo.ConvertTime(
+                        transaction.TransactionDateTime.ToUniversalTime(),
+                        query.TimeZone)));
+
+            var groupedQb = timestampedTransactions
+                .GroupBy(x => grouping.Apply(x.Transaction, x.LocalTimestamp));
+
+            return IntoGroupedTransactionResults(query, groupedQb);
         }
 
         var totalCount = await qb.CountAsync(token);
         var totalAmount = await qb.SumAsync(t => t.Amount, token);
 
         var items = await qb
-            .OrderByDescending(t => t.TransactionDateTime)
-            .ThenByDescending(t => t.Id) // ens consistent pagination
+            .OrderByDescending(x => x.TransactionDateTime)
+            .ThenByDescending(x => x.Id) // ensures consistent pagination
             .Skip((query.PageNumber - 1) * query.PageSize)
             .Take(query.PageSize)
             .ToListAsync(token);
@@ -153,7 +170,57 @@ public class SqliteTransactionRepository(
             query.PageSize,
             totalCount);
 
-        return new TransactionQueryResult(page, totalAmount);
+        return new UngroupedTransactionQueryResult(page, totalAmount);
+    }
+
+    private static GroupedTransactionQueryResult IntoGroupedTransactionResults(
+        TransactionQuery query,
+        IEnumerable<IGrouping<GroupingKey, TimestampedTransaction>> groupedQb)
+    {
+        var groups = OrderGroups(groupedQb)
+            .Select(group =>
+            {
+                var transactions = group
+                    .OrderByDescending(x => x.LocalTimestamp)
+                    .ThenByDescending(x => x.Transaction.Id)
+                    .Select(x => x.Transaction)
+                    .ToList();
+
+                return new GroupedTransactionResult(
+                    group.Key,
+                    transactions,
+                    transactions.Sum(x => x.Amount),
+                    transactions.Count);
+            })
+            .ToList();
+
+        var page = new PagedResult<GroupedTransactionResult>(
+            groups
+                .Skip((query.PageNumber - 1) * query.PageSize)
+                .Take(query.PageSize)
+                .ToList(),
+            query.PageNumber,
+            query.PageSize,
+            groups.Count);
+
+        return new GroupedTransactionQueryResult(
+            page,
+            groups.Sum(x => x.TotalAmount));
+    }
+
+    private static IOrderedEnumerable<IGrouping<GroupingKey, TimestampedTransaction>> OrderGroups(
+        IEnumerable<IGrouping<GroupingKey, TimestampedTransaction>> groups)
+    {
+        return groups.OrderByDescending(group => group.Key switch
+        {
+            GroupingKey.Date key => key.Value,
+            _ => DateTime.MinValue,
+        }).ThenBy(group => group.Key switch
+        {
+            GroupingKey.Type key => (int)key.Value,
+            GroupingKey.Category key => (int)key.Value,
+            _ => 0,
+        });
     }
 
     public Task UpdateAsync(Transaction transaction)

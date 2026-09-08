@@ -4,6 +4,8 @@ namespace PebbleJar.Application.Queries;
 
 public sealed record TransactionQuery
 {
+    public const string DefaultTimeZoneId = "UTC";
+
     public Guid? AccountId { get; }
     public DateTimeOffset? FromDate { get; }
     public DateTimeOffset? ToDate { get; }
@@ -14,6 +16,10 @@ public sealed record TransactionQuery
     public TransactionType? TransactionType { get; }
     public TransactionCategory[]? CategoryIds { get; }
     public TransactionKind[]? TransactionKindIds { get; }
+    public TransactionGrouping? Grouping { get; }
+    public string TimeZoneId { get; }
+    public TimeZoneInfo TimeZone { get; }
+
     public int PageNumber { get; }
     public int PageSize { get; }
 
@@ -27,6 +33,8 @@ public sealed record TransactionQuery
         TransactionType? transactionType = null,
         TransactionCategory[]? categoryIds = null,
         TransactionKind[]? transactionKindIds = null,
+        TransactionGrouping? grouping = null,
+        string? timeZoneId = null,
         int pageNumber = 1,
         int pageSize = 50)
     {
@@ -59,6 +67,23 @@ public sealed record TransactionQuery
                  nameof(amountFrom));
         }
 
+        timeZoneId = string.IsNullOrWhiteSpace(timeZoneId)
+            ? TimeZoneInfo.Utc.ToSerializedString()
+            : timeZoneId;
+
+        try
+        {
+            TimeZone = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
+        }
+        catch (TimeZoneNotFoundException exception)
+        {
+            throw new ArgumentException("Unknown time zone ID.", nameof(timeZoneId), exception);
+        }
+        catch (InvalidTimeZoneException exception)
+        {
+            throw new ArgumentException("Invalid time zone configuration.", nameof(timeZoneId), exception);
+        }
+
         AccountId = accountId;
         FromDate = fromDate;
         ToDate = toDate;
@@ -68,6 +93,8 @@ public sealed record TransactionQuery
         TransactionType = transactionType;
         CategoryIds = categoryIds;
         TransactionKindIds = transactionKindIds;
+        Grouping = grouping;
+        TimeZoneId = TimeZone.Id;
         PageNumber = pageNumber;
         PageSize = pageSize;
     }

@@ -15,12 +15,11 @@ namespace PebbleJar.Api.Endpoints;
 public static class TransactionEndpoints
 {
     private const string LogCategory = nameof(TransactionEndpoints);
-    private const int DefaultPageSize = 50;
 
     public static IEndpointRouteBuilder MapTransactionEndpoints(
         this IEndpointRouteBuilder endpoints)
     {
-        endpoints.MapPost("/transactions/search", GetTransactions)
+        endpoints.MapPost("/transactions/search", SearchTransactions)
             .WithName("Get Account Transactions");
 
         endpoints.MapPost("/transactions/sync", SyncTransactions)
@@ -33,9 +32,8 @@ public static class TransactionEndpoints
         Ok<TransactionSearchResponse>,
         BadRequest<string>,
         NotFound<string>>>
-        GetTransactions(
-        TransactionsListRequest request,
-        AkahuClient akahuClient,
+        SearchTransactions(
+        TransactionsSearchRequest request,
         IAccountRepository accountsCtx,
         ITransactionRepository transactionsCtx,
         ILoggerFactory loggerFactory,
@@ -49,37 +47,31 @@ public static class TransactionEndpoints
             return TypedResults.NotFound("Requested account does not exist.");
         }
 
-        var query = new TransactionQuery(
-            request.AccountId,
-            request.FromDate,
-            request.ToDate,
-            request.AmountFrom,
-            request.AmountTo,
-            request.Query,
-            request.TransactionType,
-            request.Categories,
-            request.TransactionKinds,
-            request.PageNumber ?? 1,
-            request.PageSize ?? DefaultPageSize);
+        var query = request.IntoQuery();
 
         var result = await transactionsCtx.ListAsync(query, token);
-        var page = result.Transactions;
 
-        var transactions = page.Items
-            .Select(ToTransactionListResponse)
-            .ToList();
+        TransactionItemResponse MapTransaction(Transaction transaction) =>
+            ToTransactionListResponse(transaction, query.TimeZone);
 
-        var responsePage = new PagedResponse<TransactionItemResponse, TransactionsListRequest>(
-            transactions,
-            request,
-            page.PageNumber,
-            page.PageSize,
-            page.TotalCount,
-            page.TotalPages,
-            page.HasPreviousPage,
-            page.HasNextPage);
-
-        return TypedResults.Ok(new TransactionSearchResponse(responsePage, result.TotalAmount));
+        return TypedResults.Ok(result switch
+        {
+            UngroupedTransactionQueryResult ungrouped => new TransactionSearchResponse(
+                ToPage(ungrouped.Transactions, request, MapTransaction),
+                null,
+                ungrouped.TotalAmount,
+                query.TimeZoneId),
+            GroupedTransactionQueryResult grouped => new TransactionSearchResponse(
+                null,
+                ToPage(grouped.Groups, request, group => new GroupedTransactionResponse(
+                    group.Key,
+                    group.Transactions.Select(MapTransaction).ToList(),
+                    group.TotalAmount,
+                    group.TotalCount)),
+                grouped.TotalAmount,
+                query.TimeZoneId),
+            _ => throw new InvalidOperationException("Unknown transaction query result."),
+        });
 
     }
 
@@ -164,18 +156,39 @@ public static class TransactionEndpoints
     }
 
 
-    private static TransactionItemResponse ToTransactionListResponse(Transaction transaction)
+    private static TransactionItemResponse ToTransactionListResponse(
+        Transaction transaction,
+        TimeZoneInfo timeZone)
     {
+        var utcTimestamp = transaction.TransactionDateTime.ToUniversalTime();
+
         return new TransactionItemResponse(
             transaction.Id,
             transaction.AccountId,
-            transaction.TransactionDateTime,
+            utcTimestamp,
+            TimeZoneInfo.ConvertTime(utcTimestamp, timeZone),
             transaction.Description,
             transaction.Amount,
             transaction.Type,
             transaction.Category,
             transaction.Kind,
             transaction.RecognitionData);
+    }
+
+    private static PagedResponse<TResponse, TransactionsSearchRequest> ToPage<TItem, TResponse>(
+        PagedResult<TItem> page,
+        TransactionsSearchRequest request,
+        Func<TItem, TResponse> map)
+    {
+        return new PagedResponse<TResponse, TransactionsSearchRequest>(
+            page.Items.Select(map).ToList(),
+            request,
+            page.PageNumber,
+            page.PageSize,
+            page.TotalCount,
+            page.TotalPages,
+            page.HasPreviousPage,
+            page.HasNextPage);
     }
 
     private static Transaction ToDomainTransaction(
