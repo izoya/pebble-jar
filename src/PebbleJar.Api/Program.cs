@@ -43,6 +43,7 @@ builder.Services.AddDbContext<PebbleJarDbContext>(options =>
 builder.Services.AddScoped<IAccountRepository, SqliteAccountRepository>();
 builder.Services.AddScoped<IFinancialInstitutionRepository, SqliteFinancialInstitutionRepository>();
 builder.Services.AddScoped<ITransactionRepository, SqliteTransactionRepository>();
+builder.Services.AddScoped<IDataVersionStore, SqliteDataVersionStore>();
 builder.Services.AddValidation();
 
 builder.Services.AddAkahuService(builder.Configuration);

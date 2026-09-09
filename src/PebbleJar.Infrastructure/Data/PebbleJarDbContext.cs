@@ -12,12 +12,14 @@ public sealed class PebbleJarDbContext(
     public DbSet<Transaction> Transactions => Set<Transaction>();
     public DbSet<FinancialInstitution> FinancialInstitutions
         => Set<FinancialInstitution>();
+    public DbSet<DataVersion> DataVersions => Set<DataVersion>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(
             typeof(PebbleJarDbContext).Assembly);
 
+        // Handle timestamps automatically for IAuditable models
         foreach (var entityType in modelBuilder.Model.GetEntityTypes()
              // equivalent of: if (entity is IAuditable)
              .Where(type => typeof(IAuditable).IsAssignableFrom(type.ClrType)))
