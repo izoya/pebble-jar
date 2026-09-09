@@ -19,10 +19,10 @@ public class TransactionsSearchRequest : IValidatableObject
     [StringLength(100)]
     public string? Query { get; init; } // description, rd.MerchantName, rd.Reference, rd.Particulars
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public int? AmountFrom { get; init; }
+    public decimal? AmountFrom { get; init; }
     // TODO: Add absolute_amount_ filter
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public int? AmountTo { get; init; }
+    public decimal? AmountTo { get; init; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public TransactionType? TransactionType { get; init; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]

@@ -8,8 +8,8 @@ public sealed record TransactionQuery
     public DateTimeOffset? FromDate { get; }
     public DateTimeOffset? ToDate { get; }
     public string? Query { get; }
-    public int? AmountFrom { get; }
-    public int? AmountTo { get; }
+    public decimal? AmountFrom { get; }
+    public decimal? AmountTo { get; }
 
     public TransactionType? TransactionType { get; }
     public TransactionCategory[]? CategoryIds { get; }
@@ -25,8 +25,8 @@ public sealed record TransactionQuery
         Guid? accountId,
         DateTimeOffset? fromDate = null,
         DateTimeOffset? toDate = null,
-        int? amountFrom = null,
-        int? amountTo = null,
+        decimal? amountFrom = null,
+        decimal? amountTo = null,
         string? query = null,
         TransactionType? transactionType = null,
         TransactionCategory[]? categoryIds = null,
