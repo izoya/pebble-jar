@@ -7,31 +7,58 @@ using PebbleJar.Infrastructure.Data;
 namespace PebbleJar.Infrastructure.Repositories
 {
     public class SqliteAccountRepository(
-        PebbleJarDbContext dbContext)
-        : IAccountRepository
+        PebbleJarDbContext dbContext,
+        IDataVersionStore versions) : IAccountRepository
     {
+        private readonly DataScope Scope = DataScope.Account;
         public async Task AddAsync(Account account)
         {
             ArgumentNullException.ThrowIfNull(account);
 
+            await using var dbTransaction = await dbContext.Database.BeginTransactionAsync();
+
             dbContext.Accounts.Add(account);
+
             await dbContext.SaveChangesAsync();
+
+            await versions.IncrementAsync(Scope);
+            await dbTransaction.CommitAsync();
         }
 
         public async Task AddManyAsync(IEnumerable<Account> accounts)
         {
             ArgumentNullException.ThrowIfNull(accounts);
 
+            if (!accounts.Any())
+            {
+                return;
+            }
+
+            await using var dbTransaction = await dbContext.Database.BeginTransactionAsync();
+
             dbContext.Accounts.AddRange(accounts);
             await dbContext.SaveChangesAsync();
+
+            await versions.IncrementAsync(Scope);
+            await dbTransaction.CommitAsync();
         }
 
         public async Task UpdateManyAsync(IEnumerable<Account> accounts)
         {
             ArgumentNullException.ThrowIfNull(accounts);
 
+            if (!accounts.Any())
+            {
+                return;
+            }
+
+            await using var dbTransaction = await dbContext.Database.BeginTransactionAsync();
+
             dbContext.Accounts.UpdateRange(accounts);
             await dbContext.SaveChangesAsync();
+
+            await versions.IncrementAsync(Scope);
+            await dbTransaction.CommitAsync();
         }
 
         public async Task DeleteAsync(Account account)
@@ -74,8 +101,13 @@ namespace PebbleJar.Infrastructure.Repositories
         {
             ArgumentNullException.ThrowIfNull(account);
 
+            await using var dbTransaction = await dbContext.Database.BeginTransactionAsync();
+
             dbContext.Accounts.Update(account);
             await dbContext.SaveChangesAsync();
+
+            await versions.IncrementAsync(Scope);
+            await dbTransaction.CommitAsync();
         }
     }
 }

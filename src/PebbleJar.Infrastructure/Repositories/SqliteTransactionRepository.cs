@@ -7,8 +7,12 @@ using PebbleJar.Infrastructure.Data;
 
 namespace PebbleJar.Infrastructure.Repositories;
 
-public class SqliteTransactionRepository(PebbleJarDbContext dbContext) : ITransactionRepository
+public class SqliteTransactionRepository(
+    PebbleJarDbContext dbContext,
+    IDataVersionStore versions) : ITransactionRepository
 {
+    private DataScope Scope = DataScope.Transaction;
+
     public Task AddAsync(Transaction transaction)
     {
         throw new NotImplementedException();
@@ -49,6 +53,13 @@ public class SqliteTransactionRepository(PebbleJarDbContext dbContext) : ITransa
                 nameof(transactions));
         }
 
+        if (incomingExternalIds.Length == 0)
+        {
+            return;
+        }
+
+        await using var dbTransaction = await dbContext.Database.BeginTransactionAsync(token);
+
         var existingExternalIds = await dbContext.Transactions
             .AsNoTracking()
             .Where(t =>
@@ -64,11 +75,14 @@ public class SqliteTransactionRepository(PebbleJarDbContext dbContext) : ITransa
 
         if (missingTransactions.Count == 0)
         {
-            return;
+            return; // dbTransaction disposed; transaction rolled back
         }
 
         dbContext.Transactions.AddRange(missingTransactions);
         await dbContext.SaveChangesAsync(token);
+
+        await versions.IncrementAsync(Scope);
+        await dbTransaction.CommitAsync(token);
     }
 
     public Task DeleteAsync(Transaction transaction)

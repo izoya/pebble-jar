@@ -14,12 +14,15 @@ public sealed class SqliteTransactionRepositoryTests
     {
         await using var database = await InMemorySqliteDatabase.CreateAsync();
         var account = await AccountFactory.CreateAsync(database.Context);
-        var repository = new SqliteTransactionRepository(database.Context);
+        var versions = new SqliteDataVersionStore(database.Context);
+        var repository = new SqliteTransactionRepository(database.Context, versions);
 
         await repository.AddMissingAsync(
             account.Id,
             [CreateTransaction(account.Id, "transaction-1")],
             CancellationToken.None);
+        Assert.Equal(1, await versions.GetAsync(DataScope.Transaction));
+
         await repository.AddMissingAsync(
             account.Id,
             [CreateTransaction(account.Id, "transaction-1")],
@@ -28,6 +31,7 @@ public sealed class SqliteTransactionRepositoryTests
         var stored = await database.Context.Transactions.ToListAsync();
         Assert.Single(stored);
         Assert.Equal("transaction-1", stored[0].ExternalId);
+        Assert.Equal(1, await versions.GetAsync(DataScope.Transaction));
     }
 
     [Fact]
@@ -35,7 +39,8 @@ public sealed class SqliteTransactionRepositoryTests
     {
         await using var database = await InMemorySqliteDatabase.CreateAsync();
         var account = await AccountFactory.CreateAsync(database.Context);
-        var repository = new SqliteTransactionRepository(database.Context);
+        var versions = new SqliteDataVersionStore(database.Context);
+        var repository = new SqliteTransactionRepository(database.Context, versions);
         var transactions = new[]
         {
             CreateTransaction(account.Id, "transaction-1"),
@@ -56,7 +61,8 @@ public sealed class SqliteTransactionRepositoryTests
     {
         await using var database = await InMemorySqliteDatabase.CreateAsync();
         var account = await AccountFactory.CreateAsync(database.Context);
-        var repository = new SqliteTransactionRepository(database.Context);
+        var versions = new SqliteDataVersionStore(database.Context);
+        var repository = new SqliteTransactionRepository(database.Context, versions);
 
         var exception = await Assert.ThrowsAsync<ArgumentException>(() =>
             repository.AddMissingAsync(
@@ -72,7 +78,8 @@ public sealed class SqliteTransactionRepositoryTests
     {
         await using var database = await InMemorySqliteDatabase.CreateAsync();
         var account = await AccountFactory.CreateAsync(database.Context);
-        var repository = new SqliteTransactionRepository(database.Context);
+        var versions = new SqliteDataVersionStore(database.Context);
+        var repository = new SqliteTransactionRepository(database.Context, versions);
 
         var exception = await Assert.ThrowsAsync<ArgumentException>(() =>
             repository.AddMissingAsync(
