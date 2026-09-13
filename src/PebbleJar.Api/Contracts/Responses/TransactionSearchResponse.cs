@@ -1,16 +1,37 @@
 using PebbleJar.Api.Contracts.Requests;
+using PebbleJar.Application.Queries;
 using PebbleJar.Domain;
-using System.Text.Json.Serialization;
 
 namespace PebbleJar.Api.Contracts.Responses;
 
 public sealed record TransactionSearchResponse(
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    PagedResponse<TransactionItemResponse, TransactionsSearchRequest>? Transactions,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    PagedResponse<GroupedTransactionResponse, TransactionsSearchRequest>? Groups,
+    IReadOnlyList<TransactionItemResponse> Transactions,
+    PageResponse Page,
     decimal TotalAmount,
-    string TimeZoneId);
+    string TimeZoneId,
+    int DataVersion,
+    TransactionsSearchRequest Request);
+
+public sealed record TransactionGroupsSearchResponse(
+    IReadOnlyList<TransactionGroupResponse> Groups,
+    PageResponse Page,
+    decimal TotalAmount,
+    string TimeZoneId,
+    int DataVersion,
+    TransactionsSearchGroupRequest Request);
+
+public sealed record PageResponse(
+    int Number,
+    int Size,
+    int TotalItems,
+    int TotalPages,
+    bool HasPrevious,
+    bool HasNext);
+
+public sealed record TransactionGroupResponse(
+    GroupingKey Key,
+    decimal TotalAmount,
+    int TotalCount);
 
 public sealed record TransactionItemResponse(
     Guid Id,
@@ -23,13 +44,3 @@ public sealed record TransactionItemResponse(
     TransactionCategory Category,
     TransactionKind Kind,
     TransactionRecognitionData? RecognitionData);
-
-public sealed record GroupedTransactionResponse(
-    GroupingKeyResponse Key,
-    IReadOnlyList<TransactionItemResponse> Transactions,
-    decimal TotalAmount,
-    int TotalCount);
-
-public sealed record GroupingKeyResponse(
-    string Type,
-    string Value);

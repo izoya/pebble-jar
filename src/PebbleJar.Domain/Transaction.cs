@@ -1,15 +1,15 @@
-﻿using PebbleJar.Domain.Abstractions;
+using PebbleJar.Domain.Abstractions;
 using System.Text.Json;
 
 namespace PebbleJar.Domain;
 
-public enum TransactionType
+public sealed class TransactionLocalDate
 {
-    Debit = 1,
-    Credit = 2,
+    public Guid TransactionId { get; init; }
+    public DateOnly LocalDate { get; init; }
 }
 
-public class Transaction : IAuditable
+public sealed class Transaction : IAuditable
 {
     public Guid Id { get; init; } = Guid.NewGuid();
     /// <summary>
@@ -27,7 +27,11 @@ public class Transaction : IAuditable
     /// <summary>
     /// The timestamp of when this transaction was created by the bank
     /// </summary>
-    public required DateTimeOffset TransactionDateTime { get; init; }
+    public required DateTimeOffset TransactionDateTime
+    {
+        get;
+        init => field = value.ToUniversalTime();
+    }
     /// <summary>
     /// User's description
     /// </summary>
@@ -55,13 +59,19 @@ public class Transaction : IAuditable
     public string? SourcePayloadJson { get; private set; }
     public DateTimeOffset? SourceFetchedAt { get; private set; }
 
-    public virtual Account Account { get; init; } = null!;
+    public Account Account { get; init; } = null!;
 
     public void SetPayloadJson<T>(T payload)
     {
         this.SourcePayloadJson = JsonSerializer.Serialize(payload);
         this.SourceFetchedAt = DateTime.UtcNow;
     }
+}
+
+public enum TransactionType
+{
+    Debit = 1,
+    Credit = 2,
 }
 
 public enum TransactionKind

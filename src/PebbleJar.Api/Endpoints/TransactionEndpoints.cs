@@ -22,6 +22,9 @@ public static class TransactionEndpoints
         endpoints.MapPost("/transactions/search", SearchTransactions)
             .WithName("Get Account Transactions");
 
+        endpoints.MapPost("/transactions/search/groups", SearchTransactionGroups)
+            .WithName("Search Transaction Groups");
+
         endpoints.MapPost("/transactions/sync", SyncTransactions)
             .WithName("Sync Account Transactions");
 
@@ -41,40 +44,64 @@ public static class TransactionEndpoints
     {
         var logger = loggerFactory.CreateLogger(LogCategory);
 
-        if (request.AccountId is { } accountId
+        if (request.Filters?.AccountId is { } accountId
             && await accountsCtx.GetByIdAsync(accountId, token) is null)
         {
             return TypedResults.NotFound("Requested account does not exist.");
         }
 
-        var query = request.IntoQuery();
-
+        var query = request.ToQuery();
         var result = await transactionsCtx.ListAsync(query, token);
 
-        TransactionItemResponse MapTransaction(Transaction transaction) =>
-            ToTransactionListResponse(transaction, query.TimeZone);
+        logger.LogDebug("Transactions returned: {Count}", result.Items.Count);
 
-        return TypedResults.Ok(result switch
-        {
-            UngroupedTransactionQueryResult ungrouped => new TransactionSearchResponse(
-                ToPage(ungrouped.Transactions, request, MapTransaction),
-                null,
-                ungrouped.TotalAmount,
-                query.TimeZoneId),
-            GroupedTransactionQueryResult grouped => new TransactionSearchResponse(
-                null,
-                ToPage(grouped.Groups, request, group => new GroupedTransactionResponse(
-                    ToGroupingKeyResponse(group.Key),
-                    group.Transactions.Select(MapTransaction).ToList(),
-                    group.TotalAmount,
-                    group.TotalCount)),
-                grouped.TotalAmount,
-                query.TimeZoneId),
-            _ => throw new InvalidOperationException("Unknown transaction query result."),
-        });
+        var items = result.Items
+            .Select(ToTransactionListResponse)
+            .ToList();
+        var response = new TransactionSearchResponse(
+            items,
+            ToPageResponse(result.Pagination),
+            result.TotalAmount,
+            TimeZoneInfo.Local.Id,
+            result.DataVersion,
+            request);
+
+        return TypedResults.Ok(response);
 
     }
 
+    private static async Task<Results<Ok<TransactionGroupsSearchResponse>, BadRequest<string>, NotFound<string>>>
+        SearchTransactionGroups(
+        TransactionsSearchGroupRequest request,
+        IAccountRepository accountsCtx,
+        ITransactionRepository transactionsCtx,
+        CancellationToken token)
+    {
+        if (request.Filters?.AccountId is { } accountId
+            && await accountsCtx.GetByIdAsync(accountId, token) is null)
+            return TypedResults.NotFound("Requested account does not exist.");
+
+        var grouping = request.Grouping!.Value;
+        var query = request.ToQuery();
+
+        var result = await transactionsCtx.ListGroupsAsync(query, grouping, token);
+        var groups = result.Items
+            .Select(group => new TransactionGroupResponse(
+                group.Key,
+                group.TotalAmount,
+                group.TotalCount))
+            .ToList();
+
+        var response = new TransactionGroupsSearchResponse(
+            groups,
+            ToPageResponse(result.Pagination),
+            result.TotalAmount,
+            TimeZoneInfo.Local.Id,
+            result.DataVersion,
+            request);
+
+        return TypedResults.Ok(response);
+    }
 
     private static async Task<Results<
         Ok,
@@ -156,9 +183,7 @@ public static class TransactionEndpoints
     }
 
 
-    private static TransactionItemResponse ToTransactionListResponse(
-        Transaction transaction,
-        TimeZoneInfo timeZone)
+    private static TransactionItemResponse ToTransactionListResponse(Transaction transaction)
     {
         var utcTimestamp = transaction.TransactionDateTime.ToUniversalTime();
 
@@ -166,7 +191,7 @@ public static class TransactionEndpoints
             transaction.Id,
             transaction.AccountId,
             utcTimestamp,
-            TimeZoneInfo.ConvertTime(utcTimestamp, timeZone),
+            utcTimestamp.ToLocalTime(),
             transaction.Description,
             transaction.Amount,
             transaction.Type,
@@ -175,38 +200,13 @@ public static class TransactionEndpoints
             transaction.RecognitionData);
     }
 
-    private static GroupingKeyResponse ToGroupingKeyResponse(GroupingKey key)
-    {
-        return key switch
-        {
-            GroupingKey.Date date => new GroupingKeyResponse(
-                "date",
-                DateOnly.FromDateTime(date.Value).ToString("yyyy-MM-dd")),
-            GroupingKey.Type type => new GroupingKeyResponse(
-                "transaction_type",
-                type.Value.ToString()),
-            GroupingKey.Category category => new GroupingKeyResponse(
-                "transaction_category",
-                category.Value.ToString()),
-            _ => throw new NotSupportedException($"Unsupported grouping key {key.GetType().Name}."),
-        };
-    }
-
-    private static PagedResponse<TResponse, TransactionsSearchRequest> ToPage<TItem, TResponse>(
-        PagedResult<TItem> page,
-        TransactionsSearchRequest request,
-        Func<TItem, TResponse> map)
-    {
-        return new PagedResponse<TResponse, TransactionsSearchRequest>(
-            page.Items.Select(map).ToList(),
-            request,
-            page.PageNumber,
-            page.PageSize,
-            page.TotalCount,
-            page.TotalPages,
-            page.HasPreviousPage,
-            page.HasNextPage);
-    }
+    private static PageResponse ToPageResponse(Pagination page) => new(
+        page.PageNumber,
+        page.PageSize,
+        page.TotalCount,
+        page.TotalPages,
+        page.HasPreviousPage,
+        page.HasNextPage);
 
     private static Transaction ToDomainTransaction(
         AkahuTransaction transaction,

@@ -1,7 +1,6 @@
 namespace PebbleJar.Application.Results;
 
-public sealed record PagedResult<T>(
-    IReadOnlyList<T> Items,
+public sealed record Pagination(
     int PageNumber,
     int PageSize,
     int TotalCount)
