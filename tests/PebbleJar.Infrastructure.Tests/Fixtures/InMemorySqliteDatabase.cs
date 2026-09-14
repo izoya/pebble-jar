@@ -31,7 +31,7 @@ internal sealed class InMemorySqliteDatabase : IAsyncDisposable
             .UseSnakeCaseNamingConvention()
             .Options;
         var context = new PebbleJarDbContext(options);
-        await context.Database.EnsureCreatedAsync(CancellationToken.None);
+        await context.Database.MigrateAsync(CancellationToken.None);
 
         return new InMemorySqliteDatabase(connection, context);
     }
