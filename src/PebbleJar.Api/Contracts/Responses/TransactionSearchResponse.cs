@@ -9,7 +9,7 @@ public sealed record TransactionSearchResponse(
     decimal TotalAmount,
     string TimeZoneId,
     int DataVersion,
-    TransactionSearchParametersResponse Filters);
+    TransactionSearchParametersResponse Parameters);
 
 public sealed record TransactionGroupsSearchResponse(
     IReadOnlyList<TransactionGroupResponse> Groups,
@@ -17,7 +17,7 @@ public sealed record TransactionGroupsSearchResponse(
     decimal TotalAmount,
     string TimeZoneId,
     int DataVersion,
-    TransactionSearchParametersResponse Filters);
+    TransactionSearchParametersResponse Parameters);
 
 
 
@@ -55,4 +55,3 @@ public sealed record TransactionItemResponse(
             transaction.RecognitionData);
     }
 }
-

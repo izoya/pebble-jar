@@ -31,11 +31,11 @@ public sealed record TransactionQuery
         int pageNumber = 1,
         int pageSize = 50)
     {
-        if (pageNumber < 1)
+        if (pageNumber is < 1 or > 100)
         {
             throw new ArgumentOutOfRangeException(
                 nameof(pageNumber),
-                "Page number must be at least 1.");
+                "Page number must be between 1 and 100.");
         }
 
         if (pageSize is < 1 or > 100)
