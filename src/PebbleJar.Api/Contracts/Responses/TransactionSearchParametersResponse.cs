@@ -13,7 +13,7 @@ public sealed record TransactionSearchParametersResponse(
     TransactionGrouping? Grouping)
 {
     public static TransactionSearchParametersResponse From(
-        TransactionSearchRequestBase request) => new(
+        TransactionSearchBaseRequest request) => new(
         request.Filters is { } filters
             ? new TransactionFiltersResponse(
                 filters.AccountId,

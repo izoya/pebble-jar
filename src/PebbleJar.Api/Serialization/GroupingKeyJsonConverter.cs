@@ -73,10 +73,9 @@ public class GroupingKeyJsonConverter : JsonConverter<GroupingKey>
             || !Enum.IsDefined(result)
             || result.ToString() != value)
         {
-            throw new JsonException($"Unknown {typeof(T).Name}: '{value}.");
+            throw new JsonException($"Unknown {typeof(T).Name}: '{value}'.");
         }
 
         return result;
     }
 }
-

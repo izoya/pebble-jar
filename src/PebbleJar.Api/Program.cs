@@ -23,7 +23,8 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 {
     options.SerializerOptions.PropertyNamingPolicy =
         JsonNamingPolicy.SnakeCaseLower;
-    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter(
+        allowIntegerValues: false));
     options.SerializerOptions.Converters.Add(new GroupingKeyJsonConverter());
 });
 

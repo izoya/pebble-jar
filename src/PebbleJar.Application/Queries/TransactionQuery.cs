@@ -12,8 +12,8 @@ public sealed record TransactionQuery
     public decimal? AmountTo { get; }
 
     public TransactionType? TransactionType { get; }
-    public TransactionCategory[]? CategoryIds { get; }
-    public TransactionKind[]? TransactionKindIds { get; }
+    public TransactionCategory[]? Categories { get; }
+    public TransactionKind[]? TransactionKinds { get; }
 
     public int PageNumber { get; }
     public int PageSize { get; }
@@ -26,8 +26,8 @@ public sealed record TransactionQuery
         decimal? amountTo = null,
         string? query = null,
         TransactionType? transactionType = null,
-        TransactionCategory[]? categoryIds = null,
-        TransactionKind[]? transactionKindIds = null,
+        TransactionCategory[]? categories = null,
+        TransactionKind[]? transactionKinds = null,
         int pageNumber = 1,
         int pageSize = 50)
     {
@@ -65,10 +65,10 @@ public sealed record TransactionQuery
         ToDate = toDate;
         AmountFrom = amountFrom;
         AmountTo = amountTo;
-        Query = query;
+        Query = string.IsNullOrWhiteSpace(query) ? null : query.Trim();
         TransactionType = transactionType;
-        CategoryIds = categoryIds;
-        TransactionKindIds = transactionKindIds;
+        Categories = categories;
+        TransactionKinds = transactionKinds;
         PageNumber = pageNumber;
         PageSize = pageSize;
     }

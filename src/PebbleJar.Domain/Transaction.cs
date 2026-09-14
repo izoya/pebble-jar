@@ -3,12 +3,6 @@ using System.Text.Json;
 
 namespace PebbleJar.Domain;
 
-public sealed class TransactionLocalDate
-{
-    public Guid TransactionId { get; init; }
-    public DateOnly LocalDate { get; init; }
-}
-
 public sealed class Transaction : IAuditable
 {
     public Guid Id { get; init; } = Guid.NewGuid();

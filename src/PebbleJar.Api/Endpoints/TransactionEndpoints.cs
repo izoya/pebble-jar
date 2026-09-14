@@ -56,11 +56,11 @@ public static class TransactionEndpoints
         logger.LogDebug("Transactions returned: {Count}", result.Items.Count);
 
         var items = result.Items
-            .Select(ToTransactionListResponse)
+            .Select(TransactionItemResponse.From)
             .ToList();
         var response = new TransactionSearchResponse(
             items,
-            ToPageResponse(result.Pagination),
+            PageResponse.From(result.Pagination),
             result.TotalAmount,
             TimeZoneInfo.Local.Id,
             result.DataVersion,
@@ -94,7 +94,7 @@ public static class TransactionEndpoints
 
         var response = new TransactionGroupsSearchResponse(
             groups,
-            ToPageResponse(result.Pagination),
+            PageResponse.From(result.Pagination),
             result.TotalAmount,
             TimeZoneInfo.Local.Id,
             result.DataVersion,
@@ -181,32 +181,6 @@ public static class TransactionEndpoints
 
         return TypedResults.Ok();
     }
-
-
-    private static TransactionItemResponse ToTransactionListResponse(Transaction transaction)
-    {
-        var utcTimestamp = transaction.TransactionDateTime.ToUniversalTime();
-
-        return new TransactionItemResponse(
-            transaction.Id,
-            transaction.AccountId,
-            utcTimestamp,
-            utcTimestamp.ToLocalTime(),
-            transaction.Description,
-            transaction.Amount,
-            transaction.Type,
-            transaction.Category,
-            transaction.Kind,
-            transaction.RecognitionData);
-    }
-
-    private static PageResponse ToPageResponse(Pagination page) => new(
-        page.PageNumber,
-        page.PageSize,
-        page.TotalCount,
-        page.TotalPages,
-        page.HasPreviousPage,
-        page.HasNextPage);
 
     private static Transaction ToDomainTransaction(
         AkahuTransaction transaction,

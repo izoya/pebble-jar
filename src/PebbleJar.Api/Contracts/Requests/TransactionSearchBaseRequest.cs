@@ -3,11 +3,11 @@ using PebbleJar.Application.Queries;
 
 namespace PebbleJar.Api.Contracts.Requests;
 
-public abstract class TransactionSearchRequestBase(int defaultPageSize)
+public abstract class TransactionSearchBaseRequest(int defaultPageSize)
 {
     public TransactionsFilters? Filters { get; init; }
 
-    [Range(1, int.MaxValue)]
+    [Range(1, 100)]
     public int? PageNumber { get; init; }
 
     [Range(1, 100)]
@@ -21,8 +21,8 @@ public abstract class TransactionSearchRequestBase(int defaultPageSize)
         amountTo: Filters?.AmountTo,
         query: Filters?.Query,
         transactionType: Filters?.TransactionType,
-        categoryIds: Filters?.Categories,
-        transactionKindIds: Filters?.TransactionKinds,
+        categories: Filters?.Categories,
+        transactionKinds: Filters?.TransactionKinds,
         pageNumber: PageNumber ?? 1,
         pageSize: PageSize ?? defaultPageSize);
 }

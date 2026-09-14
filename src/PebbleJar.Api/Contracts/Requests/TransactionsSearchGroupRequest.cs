@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 namespace PebbleJar.Api.Contracts.Requests;
 
 public class TransactionsSearchGroupRequest()
-    : TransactionSearchRequestBase(defaultPageSize: 20)
+    : TransactionSearchBaseRequest(defaultPageSize: 20)
 {
     [Required]
     [EnumDataType(typeof(TransactionGrouping))]

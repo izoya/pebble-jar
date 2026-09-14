@@ -19,13 +19,7 @@ public sealed record TransactionGroupsSearchResponse(
     int DataVersion,
     TransactionSearchParametersResponse Filters);
 
-public sealed record PageResponse(
-    int Number,
-    int Size,
-    int TotalItems,
-    int TotalPages,
-    bool HasPrevious,
-    bool HasNext);
+
 
 public sealed record TransactionGroupResponse(
     GroupingKey Key,
@@ -42,4 +36,23 @@ public sealed record TransactionItemResponse(
     TransactionType Type,
     TransactionCategory Category,
     TransactionKind Kind,
-    TransactionRecognitionData? RecognitionData);
+    TransactionRecognitionData? RecognitionData)
+{
+    public static TransactionItemResponse From(Transaction transaction)
+    {
+        var utcTimestamp = transaction.TransactionDateTime.ToUniversalTime();
+
+        return new TransactionItemResponse(
+            transaction.Id,
+            transaction.AccountId,
+            utcTimestamp,
+            utcTimestamp.ToLocalTime(),
+            transaction.Description,
+            transaction.Amount,
+            transaction.Type,
+            transaction.Category,
+            transaction.Kind,
+            transaction.RecognitionData);
+    }
+}
+

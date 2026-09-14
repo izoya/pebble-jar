@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 using PebbleJar.Application.Interfaces;
 using PebbleJar.Application.Queries;
@@ -195,13 +196,13 @@ public class SqliteTransactionRepository(
             grouping switch
             {
                 TransactionGrouping.TransactionCategory => new GroupingKey(grouping,
-                    (TransactionCategory)int.Parse(row.Key)),
+                    (TransactionCategory)int.Parse(row.Key, CultureInfo.InvariantCulture)),
 
                 TransactionGrouping.TransactionType => new GroupingKey(grouping,
-                    (TransactionType)int.Parse(row.Key)),
+                    (TransactionType)int.Parse(row.Key, CultureInfo.InvariantCulture)),
 
                 _ => new GroupingKey(grouping, DateOnly.FromDayNumber(
-                    int.Parse(row.Key)).ToDateTime(TimeOnly.MinValue))
+                    int.Parse(row.Key, CultureInfo.InvariantCulture)).ToDateTime(TimeOnly.MinValue))
             }, row.TotalAmount, row.TotalCount)).ToList();
 
         var revision = await versions.GetAsync(Scope);
@@ -225,10 +226,10 @@ public class SqliteTransactionRepository(
             .WhereIf(query.AmountFrom.HasValue, x => x.Amount >= query.AmountFrom)
             .WhereIf(query.AmountTo.HasValue, x => x.Amount <= query.AmountTo)
             .WhereIf(query.TransactionType.HasValue, x => x.Type == query.TransactionType)
-            .WhereIf(query.CategoryIds is { } catIds && catIds.Length > 0,
-                x => query.CategoryIds!.Contains(x.Category))
-            .WhereIf(query.TransactionKindIds is { } kindIds && kindIds.Length > 0,
-                x => query.TransactionKindIds!.Contains(x.Kind));
+            .WhereIf(query.Categories is { } categories && categories.Length > 0,
+                x => query.Categories!.Contains(x.Category))
+            .WhereIf(query.TransactionKinds is { } kinds && kinds.Length > 0,
+                x => query.TransactionKinds!.Contains(x.Kind));
 
         if (query.Query is { } queryStr)
         {
