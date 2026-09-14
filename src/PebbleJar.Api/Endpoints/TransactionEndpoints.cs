@@ -64,7 +64,7 @@ public static class TransactionEndpoints
             result.TotalAmount,
             TimeZoneInfo.Local.Id,
             result.DataVersion,
-            request);
+            TransactionSearchParametersResponse.From(request));
 
         return TypedResults.Ok(response);
 
@@ -98,7 +98,7 @@ public static class TransactionEndpoints
             result.TotalAmount,
             TimeZoneInfo.Local.Id,
             result.DataVersion,
-            request);
+            TransactionSearchParametersResponse.From(request));
 
         return TypedResults.Ok(response);
     }

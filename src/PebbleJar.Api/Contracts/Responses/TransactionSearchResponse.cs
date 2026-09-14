@@ -1,4 +1,3 @@
-using PebbleJar.Api.Contracts.Requests;
 using PebbleJar.Application.Queries;
 using PebbleJar.Domain;
 
@@ -10,7 +9,7 @@ public sealed record TransactionSearchResponse(
     decimal TotalAmount,
     string TimeZoneId,
     int DataVersion,
-    TransactionsSearchRequest Request);
+    TransactionSearchParametersResponse Filters);
 
 public sealed record TransactionGroupsSearchResponse(
     IReadOnlyList<TransactionGroupResponse> Groups,
@@ -18,7 +17,7 @@ public sealed record TransactionGroupsSearchResponse(
     decimal TotalAmount,
     string TimeZoneId,
     int DataVersion,
-    TransactionsSearchGroupRequest Request);
+    TransactionSearchParametersResponse Filters);
 
 public sealed record PageResponse(
     int Number,

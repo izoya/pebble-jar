@@ -1,31 +1,31 @@
 using PebbleJar.Domain;
 using System.ComponentModel.DataAnnotations;
-using System.Text.Json.Serialization;
 
 namespace PebbleJar.Api.Contracts.Requests;
 
 public class TransactionsFilters : IValidatableObject
 {
     public Guid? AccountId { get; init; }
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+
     // Date filters represent absolute instants. 
     // Date filtering and grouping use the host's local timezone.
     public DateTimeOffset? FromDate { get; init; }
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+
     public DateTimeOffset? ToDate { get; init; }
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+
+    // Pattern search in Description, MerchantName, Reference, Particulars
+    // 100 should be plenty as various descriptions are often capped at ~40 characters
     [StringLength(100)]
-    /// Pattern search in Description, MerchantName, Reference, Particulars
     public string? Query { get; init; }
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+
     public decimal? AmountFrom { get; init; }
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+
     public decimal? AmountTo { get; init; }
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+
     public TransactionType? TransactionType { get; init; }
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+
     public TransactionCategory[]? Categories { get; init; }
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+
     public TransactionKind[]? TransactionKinds { get; init; }
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)

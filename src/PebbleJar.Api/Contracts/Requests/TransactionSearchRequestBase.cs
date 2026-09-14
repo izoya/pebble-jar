@@ -4,7 +4,6 @@ using PebbleJar.Application.Queries;
 namespace PebbleJar.Api.Contracts.Requests;
 
 public abstract class TransactionSearchRequestBase(int defaultPageSize)
-    : IValidatableObject
 {
     public TransactionsFilters? Filters { get; init; }
 
@@ -13,9 +12,6 @@ public abstract class TransactionSearchRequestBase(int defaultPageSize)
 
     [Range(1, 100)]
     public int? PageSize { get; init; }
-
-    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
-        => Filters?.Validate(validationContext) ?? [];
 
     public TransactionQuery ToQuery() => new(
         accountId: Filters?.AccountId,
