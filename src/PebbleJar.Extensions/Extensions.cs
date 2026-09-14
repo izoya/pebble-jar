@@ -14,7 +14,7 @@ public static class Extensions
 
         foreach (var property in properties)
         {
-            result.Append($"{property.Name}: {property.GetValue(obj)}");
+            result.Append($"{property.Name}: {property.GetValue(obj)}\n");
         }
 
         return result.ToString();

@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Http.HttpResults;
 using PebbleJar.Api.Contracts.Requests;
 using PebbleJar.Api.Contracts.Responses;
 using PebbleJar.Application.Interfaces;
@@ -15,13 +15,15 @@ namespace PebbleJar.Api.Endpoints;
 public static class TransactionEndpoints
 {
     private const string LogCategory = nameof(TransactionEndpoints);
-    private const int DefaultPageSize = 50;
 
     public static IEndpointRouteBuilder MapTransactionEndpoints(
         this IEndpointRouteBuilder endpoints)
     {
-        endpoints.MapPost("/transactions/search", GetTransactions)
+        endpoints.MapPost("/transactions/search", SearchTransactions)
             .WithName("Get Account Transactions");
+
+        endpoints.MapPost("/transactions/search/groups", SearchTransactionGroups)
+            .WithName("Search Transaction Groups");
 
         endpoints.MapPost("/transactions/sync", SyncTransactions)
             .WithName("Sync Account Transactions");
@@ -30,46 +32,76 @@ public static class TransactionEndpoints
     }
 
     private static async Task<Results<
-        Ok<PagedResponse<TransactionListResponse>>,
+        Ok<TransactionSearchResponse>,
         BadRequest<string>,
         NotFound<string>>>
-        GetTransactions(
-        ListTransactionsRequest request,
-        AkahuClient akahuClient,
+        SearchTransactions(
+        TransactionsSearchRequest request,
         IAccountRepository accountsCtx,
         ITransactionRepository transactionsCtx,
+        ILoggerFactory loggerFactory,
         CancellationToken token)
     {
-        if (request.AccountId is { } accountId
+        var logger = loggerFactory.CreateLogger(LogCategory);
+
+        if (request.Filters?.AccountId is { } accountId
             && await accountsCtx.GetByIdAsync(accountId, token) is null)
         {
             return TypedResults.NotFound("Requested account does not exist.");
         }
 
-        var query = new TransactionQuery(
-            request.AccountId,
-            request.FromDate,
-            request.ToDate,
-            request.PageNumber ?? 1,
-            request.PageSize ?? DefaultPageSize);
+        var query = request.ToQuery();
+        var result = await transactionsCtx.ListAsync(query, token);
 
-        var page = await transactionsCtx.ListAsync(query, token);
+        logger.LogDebug("Transactions returned: {Count}", result.Items.Count);
 
-        var transactions = page.Items
-            .Select(ToTransactionListResponse)
+        var items = result.Items
+            .Select(TransactionItemResponse.From)
             .ToList();
+        var response = new TransactionSearchResponse(
+            items,
+            PageResponse.From(result.Pagination),
+            result.TotalAmount,
+            TimeZoneInfo.Local.Id,
+            result.DataVersion,
+            TransactionSearchParametersResponse.From(request));
 
-        return TypedResults.Ok(new PagedResponse<TransactionListResponse>(
-            transactions,
-            page.PageNumber,
-            page.PageSize,
-            page.TotalCount,
-            page.TotalPages,
-            page.HasPreviousPage,
-            page.HasNextPage));
+        return TypedResults.Ok(response);
 
     }
 
+    private static async Task<Results<Ok<TransactionGroupsSearchResponse>, BadRequest<string>, NotFound<string>>>
+        SearchTransactionGroups(
+        TransactionsSearchGroupRequest request,
+        IAccountRepository accountsCtx,
+        ITransactionRepository transactionsCtx,
+        CancellationToken token)
+    {
+        if (request.Filters?.AccountId is { } accountId
+            && await accountsCtx.GetByIdAsync(accountId, token) is null)
+            return TypedResults.NotFound("Requested account does not exist.");
+
+        var grouping = request.Grouping!.Value;
+        var query = request.ToQuery();
+
+        var result = await transactionsCtx.ListGroupsAsync(query, grouping, token);
+        var groups = result.Items
+            .Select(group => new TransactionGroupResponse(
+                group.Key,
+                group.TotalAmount,
+                group.TotalCount))
+            .ToList();
+
+        var response = new TransactionGroupsSearchResponse(
+            groups,
+            PageResponse.From(result.Pagination),
+            result.TotalAmount,
+            TimeZoneInfo.Local.Id,
+            result.DataVersion,
+            TransactionSearchParametersResponse.From(request));
+
+        return TypedResults.Ok(response);
+    }
 
     private static async Task<Results<
         Ok,
@@ -148,21 +180,6 @@ public static class TransactionEndpoints
         }
 
         return TypedResults.Ok();
-    }
-
-
-    private static TransactionListResponse ToTransactionListResponse(Transaction transaction)
-    {
-        return new TransactionListResponse(
-            transaction.Id,
-            transaction.AccountId,
-            transaction.TransactionDateTime,
-            transaction.Description,
-            transaction.Amount,
-            transaction.Type,
-            transaction.Category,
-            transaction.Kind,
-            transaction.RecognitionData);
     }
 
     private static Transaction ToDomainTransaction(

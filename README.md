@@ -85,6 +85,8 @@ This is intentionally a small app, but it has a few choices where I had more fun
 ## Intended scope limits
 
 - One local user only.
+- Due to Sqlite limited timezone support, date filters and grouping 
+use the device's local timezone, assuming the bundled API and UI run on the same device. 
 - No UI yet.
 - Akahu is the only connection provider.
 - This is an actively learning project, not a finished finance product.

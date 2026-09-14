@@ -1,15 +1,9 @@
-﻿using PebbleJar.Domain.Abstractions;
+using PebbleJar.Domain.Abstractions;
 using System.Text.Json;
 
 namespace PebbleJar.Domain;
 
-public enum TransactionType
-{
-    Debit = 1,
-    Credit = 2,
-}
-
-public class Transaction : IAuditable
+public sealed class Transaction : IAuditable
 {
     public Guid Id { get; init; } = Guid.NewGuid();
     /// <summary>
@@ -27,21 +21,29 @@ public class Transaction : IAuditable
     /// <summary>
     /// The timestamp of when this transaction was created by the bank
     /// </summary>
-    public required DateTimeOffset TransactionDateTime { get; init; }
+    public required DateTimeOffset TransactionDateTime
+    {
+        get;
+        init => field = value.ToUniversalTime();
+    }
     /// <summary>
     /// User's description
     /// </summary>
-    public string? Description
+    public string? Description { get; set; }
+
+    public required decimal Amount
     {
         get;
-        set => field = string.IsNullOrWhiteSpace(value) ?
-            throw new ArgumentException("Transaction description could not be empty string")
-            : value;
+        init
+        {
+            field = value;
+            Type = value < 0
+                ? TransactionType.Debit
+                : TransactionType.Credit;
+        }
     }
 
-    public required decimal Amount { get; init; }
-
-    public TransactionType Type => Amount < 0 ? TransactionType.Debit : TransactionType.Credit;
+    public TransactionType Type { get; private set; }
 
     public required TransactionCategory Category { get; set; } = TransactionCategory.Default;
     public required TransactionKind Kind { get; init; }
@@ -51,13 +53,19 @@ public class Transaction : IAuditable
     public string? SourcePayloadJson { get; private set; }
     public DateTimeOffset? SourceFetchedAt { get; private set; }
 
-    public virtual Account Account { get; init; } = null!;
+    public Account Account { get; init; } = null!;
 
     public void SetPayloadJson<T>(T payload)
     {
         this.SourcePayloadJson = JsonSerializer.Serialize(payload);
         this.SourceFetchedAt = DateTime.UtcNow;
     }
+}
+
+public enum TransactionType
+{
+    Debit = 1,
+    Credit = 2,
 }
 
 public enum TransactionKind
@@ -107,7 +115,6 @@ public enum TransactionCategory
 public record TransactionRecognitionData
 {
     public string? MerchantName { get; init; }
-    public string? Description { get; init; }
     public string? Category { get; init; }
     public string? Group { get; init; }
     public string? CardSuffix { get; init; }

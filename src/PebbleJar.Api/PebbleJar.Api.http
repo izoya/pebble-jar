@@ -68,11 +68,44 @@ POST {{PebbleJar.Api_HostAddress}}/transactions/search
 Content-Type: application/json
 
 {
-  "account_id": "{{accountId}}",
-  "from_date": "2026-01-01T00:00:00Z",
-  "to_date": "2026-12-31T23:59:59Z",
+  "filters": {
+    "account_id": "{{accountId}}",
+    "from_date": "2026-01-01T00:00:00Z",
+    "to_date": "2026-12-31T23:59:59Z"
+  },
   "page_number": 1,
   "page_size": 50
 }
 
 
+### Search transactions without grouping
+POST {{PebbleJar.Api_HostAddress}}/transactions/search
+Content-Type: application/json
+
+{
+  "filters": {
+    "account_id": "{{accountId}}",
+    "amount_from": -500,
+    "amount_to": -1,
+    "query": "coffee",
+    "categories": ["Lifestyle"],
+    "transaction_kinds": ["CardPayment", "Unspecified"]
+  },
+  "page_number": 1,
+  "page_size": 20
+}
+
+
+### Search transactions grouped by month
+POST {{PebbleJar.Api_HostAddress}}/transactions/search/groups
+Content-Type: application/json
+
+{
+  "filters": {
+    "account_id": "{{accountId}}",
+    "from_date": "2026-01-01T00:00:00Z",
+    "to_date": "2026-12-31T23:59:59Z",
+    "transaction_type": "Credit"
+  },
+  "grouping": "Month"
+}

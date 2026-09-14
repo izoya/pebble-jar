@@ -12,6 +12,7 @@
     <Project Path="src/PebbleJar.Infrastructure/PebbleJar.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/PebbleJar.Api.Tests/PebbleJar.Api.Tests.csproj" />
     <Project Path="tests/PebbleJar.Extensions.Tests/PebbleJar.Extensions.Tests.csproj" />
     <Project Path="tests/PebbleJar.Infrastructure.Tests/PebbleJar.Infrastructure.Tests.csproj" />
   </Folder>
