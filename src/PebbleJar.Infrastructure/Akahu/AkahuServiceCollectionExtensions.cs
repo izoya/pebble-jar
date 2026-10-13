@@ -1,13 +1,14 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using PebbleJar.Application.Interfaces;
 
 namespace PebbleJar.Infrastructure.Akahu;
 
 /// <summary>
 /// - Configures Akahu options
 /// - Registers a named or typed HttpClient
-/// - (NOT YET) Registers AkahuClient as the implementation of the Application interface
+/// - Registers the account sync service
 /// </summary>
 public static class AkahuServiceCollectionExtensions
 {
@@ -26,6 +27,8 @@ public static class AkahuServiceCollectionExtensions
             var options = serviceProvider.GetRequiredService<IOptions<AkahuOptions>>().Value;
             client.BaseAddress = options.BaseUrl;
         });
+
+        services.AddScoped<IAccountSyncService, AccountSyncService>();
 
         return services;
     }
