@@ -52,13 +52,14 @@ dotnet user-secrets -p src/PebbleJar.Api set "Akahu:UserAccessToken" "your-user-
 - Pull accounts from Akahu and keep local copies up to date.
 - Pull transactions for one account or every enabled account.
 - Idempotent transactions sync.
-- Search stored transactions with limited filters (for now).
+- Search stored transactions with extended filters and grouping.
 
 ## Some landmarks
 
 This is intentionally a small app, but it has a few choices where I had more fun than I probably should have:
 
-- **A local-first data model:** SQLite stores the useful local model, provider IDs, and the original provider payload for later debugging or remapping.
+- **A local-first data model:** SQLite stores the useful local model, provider IDs,
+  and the original provider payload for later debugging or remapping.
 - **Careful sync behaviour:** Initial sync is capped at 90 days. 
   A later sync without specified date range overlaps by seven days from the latest stored transaction. 
   This makes missed or late-arriving transactions less likely without fetching everything every time.
@@ -70,6 +71,7 @@ This is intentionally a small app, but it has a few choices where I had more fun
   each with its own data.
 - **External APIs' quirks:** Unexpected fields are reported rather than silently ignored. 
 - **Database discipline:** Audit timestamps are added consistently to auditable entities.
+- **Data versioning:** 
 
 ## Project map
 
@@ -85,8 +87,8 @@ This is intentionally a small app, but it has a few choices where I had more fun
 ## Intended scope limits
 
 - One local user only.
-- Due to Sqlite limited timezone support, date filters and grouping 
-use the device's local timezone, assuming the bundled API and UI run on the same device. 
+- Due to Sqlite limited timezone support, date filters and grouping use
+  the device's local timezone, assuming the bundled API and UI run on the same device. 
 - No UI yet.
 - Akahu is the only connection provider.
 - This is an actively learning project, not a finished finance product.
